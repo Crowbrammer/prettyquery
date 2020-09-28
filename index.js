@@ -63,7 +63,7 @@ class PQuery {
         return tables;
     }
 
-    async useDB(dbName) {
+    async useDb(dbName) {
         this.db = dbName; // Need typechecking.
         await this.query(`USE ${dbName};`);
     }
