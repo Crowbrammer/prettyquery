@@ -15,10 +15,24 @@ describe('Learning MySQL', function () {
     it('Shows the currently selected db', async function () {
         const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
         await pQuery.createDb('test_db');
+        expect(await pQuery.showCurrentDb()).be.null;
         await pQuery.useDB('test_db');
         expect(await pQuery.showCurrentDb()).equal('test_db');
         pQuery.connection.end();
     })
+
+    it('Shows the tables', async function () {
+        const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
+        await pQuery.dropDb('test_db');
+        await pQuery.createDb('test_db');
+        await pQuery.useDB('test_db');
+        // If no db used;
+        expect(await pQuery.showCurrentDbTables()).to.deep.equal([]);
+        await pQuery.query('CREATE TABLE test1 (id INTEGER PRIMARY KEY AUTO_INCREMENT)');
+        await pQuery.query('CREATE TABLE test2 (id INTEGER PRIMARY KEY AUTO_INCREMENT)');
+        expect(await pQuery.showCurrentDbTables()).to.deep.equal(['test1', 'test2']);
+        pQuery.connection.end();
+    });
 })
 
 

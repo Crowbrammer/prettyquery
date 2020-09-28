@@ -3,6 +3,7 @@ class PQuery {
     constructor(options) {
         this.user       = options.user     || process.env.USER;
         this.password   = options.password || process.env.PASSWORD;
+        this.db         = options.db       || process.env.DB;
         this.connection = mysql.createConnection({
             user:     this.user,
             password: this.password
@@ -56,7 +57,14 @@ class PQuery {
         return currentDb;
     }
 
+    async showCurrentDbTables() {
+        let rawTables  = await this.query('SHOW TABLES;');
+        let tables     = rawTables.map(table => table[`Tables_in_${this.db}`]);
+        return tables;
+    }
+
     async useDB(dbName) {
+        this.db = dbName; // Need typechecking.
         await this.query(`USE ${dbName};`);
     }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "mysql_promise_querier",
+  "name": "prettyquery",
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
@@ -10,7 +10,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "keywords": [],
   "author": "",
@@ -18,5 +18,5 @@
   "directories": {
     "test": "test"
   },
-  "description": ""
+  "description": "A promise-based tool for querying MySQL databases"
 }
