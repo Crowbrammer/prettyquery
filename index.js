@@ -3,7 +3,7 @@ class PQuery {
     constructor(options) {
         this.user       = options.user     || process.env.USER;
         this.password   = options.password || process.env.PASSWORD;
-        this.db         = options.db       || process.env.DB;
+        this.db         = options.db       || process.env.DATABASE;
         this.connection = mysql.createConnection({
             user:     this.user,
             password: this.password,
