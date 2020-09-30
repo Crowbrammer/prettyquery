@@ -68,6 +68,19 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
     });
 
+    it('Uses the database given to it on initialization', async function () {
+        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
+        await pQuery.query('DROP DATABASE IF EXISTS test_db;');
+        expect(await pQuery.listAvailableDbs()).to.not.include('test_db');
+        await pQuery.createDb('test_db');
+        expect(await pQuery.listAvailableDbs()).to.include('test_db');
+        pQuery.connection.end();
+        
+        const pQueryWithDb = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD, db: 'test_db'})
+        expect(await pQueryWithDb.showCurrentDb()).to.equal('test_db');
+        pQueryWithDb.connection.end();
+    })
+
 })
 
 

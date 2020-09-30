@@ -7,7 +7,7 @@ class PQuery {
         this.connection = mysql.createConnection({
             user:     this.user,
             password: this.password,
-            db:       this.db
+            database: this.db
         })
         this.authErrorThrown = false;
 
