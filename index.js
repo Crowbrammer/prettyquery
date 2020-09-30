@@ -6,7 +6,8 @@ class PQuery {
         this.db         = options.db       || process.env.DB;
         this.connection = mysql.createConnection({
             user:     this.user,
-            password: this.password
+            password: this.password,
+            db:       this.db
         })
         this.authErrorThrown = false;
 
@@ -65,7 +66,7 @@ class PQuery {
 
     async useDb(dbName) {
         this.db = dbName; // Need typechecking.
-        await this.query(`USE ${dbName};`);
+        this.query(`USE ${dbName};`);
     }
 }
 

@@ -20,7 +20,7 @@ describe('PQuery for MySQL', function () {
         }, 3, done);
     });
 
-    it('Returns a list of DBS', async function () {
+    it('Returns a list of Dbs', async function () {
         const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
         await pQuery.query('CREATE DATABASE IF NOT EXISTS test_db;');
         let dbs = await pQuery.listAvailableDbs();
@@ -68,10 +68,6 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
     });
 
-    xit('Creates tables');
-    xit('Drops tables');
-    xit('Adds something');
-    xit('Batch adds');
 })
 
 

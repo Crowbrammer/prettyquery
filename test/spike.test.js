@@ -33,6 +33,12 @@ describe('Learning MySQL', function () {
         expect(await pQuery.showCurrentDbTables()).to.deep.equal(['test1', 'test2']);
         pQuery.connection.end();
     });
+    
+    xit('Uses a DB that doesn\'t exist', async function () {
+        const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
+        expect(await pQuery.useDb('LOL')).to.eventually.be.rejected;
+        pQuery.connection.end();
+    })
 })
 
 
