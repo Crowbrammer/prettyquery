@@ -1,3 +1,8 @@
+// This is a list of ideas I tested to be able to figure out
+// pretty query. I decided to keep this for posteriority, so that
+// people may follow my path of learning and see how things like
+// promises, the mysql library, and Node.js's util libray works. 
+
 require('dotenv').config();
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
