@@ -10,11 +10,41 @@ const expect = require('chai').expect;
 const util = require('util');
 const mysql = require('mysql');
 const PQuery = require('../index');
+const sinon = require('sinon');
 
 function test(options, cb) {
     cb(null, options.str);
 }
 const testPromisify = util.promisify(test);
+
+describe('Operators', function () {
+    it('Returns the full value with +=', function () {
+        let a = 'Hello';
+        expect(a += ', world!').to.equal('Hello, world!');
+    })
+})
+
+describe('Mocking', function () {
+    it('Updates the call count', function () {
+        // If: I have a sinon fake
+        // and: I call it once
+        // and: the sinon fake is in the blah var
+        // then: blah.callCount should equal 1;
+        let blah = sinon.fake();
+        blah();
+        expect(blah.callCount).to.equal(1);
+
+        // If: I have a sinon fake
+        // and: I call it ten times
+        // and: the sinon fake is in the blah var
+        // then: blah.callCount should equal 10;
+        blah = sinon.fake();
+        for (let i = 0; i < 10; i++) {
+            blah();
+        }
+        expect(blah.callCount).to.equal(10);
+    })
+})
 
 describe('Learning MySQL', function () {
     it('Shows the currently selected db', async function () {
@@ -39,13 +69,12 @@ describe('Learning MySQL', function () {
         pQuery.connection.end();
     });
     
-    xit('Uses a DB that doesn\'t exist', async function () {
+    xit('Uses a DB that doesn\'t exist (Not used b/c bad dbs always throw an error)', async function () {
         const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
         expect(await pQuery.useDb('LOL')).to.eventually.be.rejected;
         pQuery.connection.end();
     })
 })
-
 
 describe('Node.js', function () {
     it('Allows multiple assignment... once', function () {

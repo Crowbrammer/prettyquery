@@ -1,29 +1,12 @@
 require('dotenv').config();
 const expect = require('chai').expect;
 const PQuery = require('../index');
+const sinon  = require('sinon');
 
 describe('PQuery for MySQL', function () {
 
     it('Shows an error if the creds are wrong', function (done) {
         const pQuery = new PQuery({user: 'foo', password: 'bar'});
-        let intervals = 0;
-        const interval = setInterval(done => {
-            if (pQuery.authErrorThrown) {
-                done();
-                clearInterval(interval);
-            } else {
-                intervals++;
-            }
-            if (intervals > 30) {
-                expect('authError').to.equal('Never thrown');
-            }
-        }, 3, done);
-    });
-
-    xit('Disconnects with shorthand', function (done) {
-        const pQuery = new PQuery({user: process.env.USER, password: process.env.PASSWORD});
-        expect(pQuery.connection.state).to.equal('disconnected');
-        pQuery.quit();
         let intervals = 0;
         const interval = setInterval(done => {
             if (pQuery.authErrorThrown) {
@@ -99,7 +82,7 @@ describe('PQuery for MySQL', function () {
         pQueryWithDb.connection.end();
     })
 
-    it('Creates a SQL ready substring from columns', function () {
+    it('Creates a SQL-ready group substring from columns', function () {
         const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
         // If: ['test', 'this', 'out']
         // and: this.createColumnsSQL
@@ -116,7 +99,7 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
     })
 
-    it('Creates a SQL ready substring from values', function () {
+    it('Creates a SQL-ready group substring from values', function () {
         const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
         // If: ['test', 'this', 'out']
         // and: this.createColumnsSQL
@@ -130,6 +113,24 @@ describe('PQuery for MySQL', function () {
         // and: this.createColumnsSQL
         // then: '(test)'
         expect(pQuery.createGroupSQL('test')).to.equal('(test)');
+        pQuery.connection.end();
+    })
+
+    it('Creates a SQL-ready substring from groups', function () {
+        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
+        // If: I intend to insert into a single column 
+        // and: I have two values [['foo'], ['hello']]
+        // and: the values are in array or arrays format
+        // and: pQuery.createGroupsSQL(values)
+        // then: ('foo'), ('hello');
+        expect(pQuery.createGroupsSQL([['foo'], ['hello']], ['col_one'])).to.equal('(\'foo\'), (\'hello\')');
+        
+        // If: I intend to insert into a two columns 
+        // and: I have two values [['foo', 'bar'], ['hello', 'world']]
+        // and: the values are in array or arrays format
+        // and: pQuery.createGroupsSQL(values)
+        // then: ('foo', 'bar'), ('hello', 'world');
+        expect(pQuery.createGroupsSQL([['foo', 'bar'], ['hello', 'world']], ['col_one', 'col_two'])).to.equal('(\'foo\', \'bar\'), (\'hello\', \'world\')');
         pQuery.connection.end();
     })
 
@@ -185,6 +186,46 @@ describe('PQuery for MySQL', function () {
         testValues = testValues.map(value => [value.foo, value.bar]);
         expect(testValues).to.deep.include.members([['Fuck', 'you'], ['Without', 'me'], ['Bye', 'bye']]);
         pQuery.connection.end();
+    })
+
+    /**
+        [X] I don't know how to go about this -> Take a deep breath and try enclosing things
+        in contexts... ask what should repeat... consider recursion... 
+    */
+    it('Inserts 5,000 records at a time', async function () {
+        // If: I have 999 records to insert
+        // and: have a valid PQuery instance
+        // and: I put the records into the insert function
+        // and: ...
+        // then: the query should be called once
+        
+        // Set up
+        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
+        await pQuery.query('DROP DATABASE IF EXISTS test_db;');
+        expect(await pQuery.listAvailableDbs()).to.not.include('test_db');
+        await pQuery.createDb('test_db');
+        await pQuery.useDb('test_db');
+        await pQuery.query('CREATE TABLE test (id INTEGER PRIMARY KEY AUTO_INCREMENT, foo VARCHAR(20), bar VARCHAR(20));')
+        
+        pQuery.query = sinon.fake();
+        let arr = [];
+        for (let i = 0; i < 4999; i++) {
+            arr.push(`value-${i}`);
+        }
+        await pQuery.insert('test', ['foo'], arr);
+        expect(pQuery.query.callCount).to.equal(1);
+        
+        // Reset the fake
+        pQuery.query = sinon.fake();
+        arr = [];
+        for (let i = 0; i < 5001; i++) {
+            arr.push(`value-${i}`);
+        }
+        await pQuery.insert('test', ['foo'], arr);
+        expect(pQuery.query.callCount).to.equal(2);
+        pQuery.connection.end();
+        
+
     })
 
     it('Can handle hundreds of thousands of inserts', async function () {

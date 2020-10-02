@@ -38,43 +38,62 @@ class PQuery {
         await this.query(`DROP DATABASE IF EXISTS ${dbName};`);
     }
 
-    insert(table, columns, values){
-        let startingSQL = `INSERT INTO ${table} `; // Note the space
-        let sql = ''
-        sql += startingSQL;
-        sql += this.createGroupSQL(columns);
-        
-        // Add the values
-        sql += ' VALUES '
+    createIntroInsertSQL(table, columns) {
+        let insertSQL = `INSERT INTO ${table}`
+        insertSQL += this.createGroupSQL(columns);
+        return insertSQL += ' VALUES ';
+    }
 
-        // a single value
-        if (typeof values === 'string') {
-            sql +=  `('${values}')`;  
-        // multiple value
-        } else if (Array.isArray(values)) {
-            for (let i = 0; i < values.length; i++) {
-                const value = values[i];
-                let rowSQL = '';
-                if (typeof value === 'string' && columns.length === 1) {
-                    rowSQL += `('${value}')`;
-                } else if (Array.isArray(value)) {
-                    rowSQL = this.createGroupSQL(value, /** isValues === */ true); 
-                } else if (typeof value === 'string' && columns.length === 1) {
-                    throw new Error('For inserts with more than one column, the array must contain arrays, not strings.')
-                } 
-                
-                if (i < values.length - 1) {
-                    sql += rowSQL + ', '
-                } else {
-                    sql += rowSQL + ';' // It's the last one so close the sql;
-                }
-                
-            }
-        } else {
-            throw new Error('values argument must be of type Array.');
+    insert(/** String */ table, /** String | String[] */ columns, /** String | String[] */ values){
+
+        while (Array.isArray(values) && values.length > 5000) {
+            this.insertIteration(table, columns, values.splice(0, 5000));        
         }
-        this.query(sql);
+        
+        if (Array.isArray(values) && values.length > 0 || typeof values === 'string') {
+            this.insertIteration(table, columns, values);        
+        } 
 
+    }
+
+    insertIteration(table, columns, values) {
+        let insertSQL = this.createIntroInsertSQL(table, columns);
+        // a single value
+        if (typeof values === 'string' && typeof columns === 'string' || 
+            typeof values === 'string' && Array.isArray(columns) && columns.length === 1) {
+            insertSQL +=  `('${values}');`;  
+            return this.query(insertSQL);
+        } else if (Array.isArray(values)) {
+            insertSQL += this.createGroupsSQL(values, columns) + ';';
+        } else {
+            throw new Error('values argument must be of type Array if columns.length > 1.');
+        }
+
+        this.query(insertSQL);
+    }
+
+    createGroupsSQL(values, columns /** For error-throwing purposes */) {
+        let groupsSQL = ''
+        
+        for (let i = 0; i < values.length; i++) {
+            const value = values[i];
+            let rowSQL = '';
+            if (typeof value === 'string' && columns.length === 1) {
+                rowSQL += `('${value}')`;
+            } else if (Array.isArray(value)) {
+                rowSQL = this.createGroupSQL(value, /** isValues === */ true);
+            } else if (typeof value === 'string' && columns.length === 1) {
+                throw new Error('For inserts with more than one column, the array must contain arrays, not strings.');
+            }
+
+            if (i < values.length - 1) {
+                groupsSQL += rowSQL + ', ';
+            } else {
+                groupsSQL += rowSQL; // It's the last one so close the sql;
+            }
+
+        }
+        return groupsSQL;
     }
 
     createGroupSQL(groupArray, isValues) {
