@@ -99,6 +99,40 @@ describe('PQuery for MySQL', function () {
         pQueryWithDb.connection.end();
     })
 
+    it('Creates a SQL ready substring from columns', function () {
+        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
+        // If: ['test', 'this', 'out']
+        // and: this.createColumnsSQL
+        // then: '(test, this, out)'
+        expect(pQuery.createGroupSQL(['test', 'this', 'out'])).to.equal('(test, this, out)');
+        // If: ['test']
+        // and: this.createColumnsSQL
+        // then: '(test)'
+        expect(pQuery.createGroupSQL(['test'])).to.equal('(test)');
+        // If: 'test'
+        // and: this.createColumnsSQL
+        // then: '(test)'
+        expect(pQuery.createGroupSQL('test')).to.equal('(test)');
+        pQuery.connection.end();
+    })
+
+    it('Creates a SQL ready substring from values', function () {
+        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
+        // If: ['test', 'this', 'out']
+        // and: this.createColumnsSQL
+        // then: '(test, this, out)'
+        expect(pQuery.createGroupSQL(['test', 'this', 'out'])).to.equal('(test, this, out)');
+        // If: ['test']
+        // and: this.createColumnsSQL
+        // then: '(test)'
+        expect(pQuery.createGroupSQL(['test'])).to.equal('(test)');
+        // If: 'test'
+        // and: this.createColumnsSQL
+        // then: '(test)'
+        expect(pQuery.createGroupSQL('test')).to.equal('(test)');
+        pQuery.connection.end();
+    })
+
     it('Inserts one thing into the moaning, ready-for-it DB', async function () {
         // Set up
         const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
@@ -152,6 +186,33 @@ describe('PQuery for MySQL', function () {
         expect(testValues).to.deep.include.members([['Fuck', 'you'], ['Without', 'me'], ['Bye', 'bye']]);
         pQuery.connection.end();
     })
+
+    it('Can handle hundreds of thousands of inserts', async function () {
+        // If: There's an array of 100,000 strings
+        // and: There's an authenticated PQuery
+        // and: a db for use
+        // and: pQuery.insert(...)
+        // then: it inserts the 100K things in the array.
+
+        // Set up
+        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
+        await pQuery.query('DROP DATABASE IF EXISTS test_db;');
+        expect(await pQuery.listAvailableDbs()).to.not.include('test_db');
+        await pQuery.createDb('test_db');
+        await pQuery.useDb('test_db');
+        await pQuery.query('CREATE TABLE test (id INTEGER PRIMARY KEY AUTO_INCREMENT, foo VARCHAR(20), bar VARCHAR(20));')
+
+        const arr = [];
+        for (let i = 0; i < 190000; i++) {
+            arr.push(`value-${i}`);
+        }
+        expect(arr.length).to.equal(190000);
+        await pQuery.insert('test', ['foo'], arr);
+        const values = await pQuery.query('SELECT * FROM test');
+        expect(values.length).to.equal(190000);
+        pQuery.connection.end();
+
+    }).timeout(10000)
 
 })
 

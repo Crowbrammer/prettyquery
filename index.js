@@ -39,23 +39,10 @@ class PQuery {
     }
 
     insert(table, columns, values){
+        let startingSQL = `INSERT INTO ${table} `; // Note the space
         let sql = ''
-        let startingSQL = `INSERT INTO ${table} (`;
         sql += startingSQL;
-        
-        // Add the columns
-        if (Array.isArray(columns)) {
-            for (let i = 0; i < columns.length; i++) {
-                const col = columns[i];
-                if (i < columns.length - 1) {
-                    sql += col + ', '
-                } else {
-                    sql += col + ')'
-                }
-            }
-        } else {
-            throw new Error('Under construction...')
-        }
+        sql += this.createGroupSQL(columns);
         
         // Add the values
         sql += ' VALUES '
@@ -67,38 +54,65 @@ class PQuery {
         } else if (Array.isArray(values)) {
             for (let i = 0; i < values.length; i++) {
                 const value = values[i];
-                // Iterate over the values...
-                // If it's an array of strings...
-                // esp. if there's only one column...
-                let newStr = '(';
+                let rowSQL = '';
                 if (typeof value === 'string' && columns.length === 1) {
-                    newStr += `'${value}')`;
+                    rowSQL += `('${value}')`;
+                } else if (Array.isArray(value)) {
+                    rowSQL = this.createGroupSQL(value, /** isValues === */ true); 
                 } else if (typeof value === 'string' && columns.length === 1) {
                     throw new Error('For inserts with more than one column, the array must contain arrays, not strings.')
-                } else if (Array.isArray(value)) {
-                    // Add each...
-                    for (let i = 0; i < value.length; i++) {
-                        const innerValue = value[i];
-                        if (i < value.length - 1) {
-                            newStr += `'${innerValue}'`  + ','
-                        } else {
-                            newStr += `'${innerValue}'` + ')'
-                        }
-                    }
-                }
+                } 
                 
                 if (i < values.length - 1) {
-                    sql += newStr + ', '
+                    sql += rowSQL + ', '
                 } else {
-                    sql += newStr + ';' // It's the last one so clase the sql;
+                    sql += rowSQL + ';' // It's the last one so close the sql;
                 }
                 
             }
         } else {
             throw new Error('values argument must be of type Array.');
         }
-        return this.query(sql);
+        this.query(sql);
 
+    }
+
+    createGroupSQL(groupArray, isValues) {
+        let groupSQL = '(';
+        if (Array.isArray(groupArray)) {
+            for (let i = 0; i < groupArray.length; i++) {
+                const member = groupArray[i];
+                if (i < groupArray.length - 1) {
+                    
+                    groupSQL = this.addMemberToGroupSQL(isValues, /** isEnd === */ false, groupSQL, member);
+                } else {
+                    groupSQL = this.addMemberToGroupSQL(isValues, /** isEnd === */ true, groupSQL, member);
+                }
+            }
+        } else if (typeof groupArray === 'string') {
+            groupSQL = this.addMemberToGroupSQL(isValues, /** isEnd === */ true, groupSQL, /** member === */ groupArray);
+        } else {
+            throw new Error('Under construction...');
+        }
+        return groupSQL;
+    }
+
+    addMemberToGroupSQL(isValues, isEnd, /** String */ groupSQL, /** String */ member) {
+        if (!isEnd) {
+            // SQL syntax requires values (but not column) to have quotes (')
+            if (isValues) {
+                groupSQL += `'${member}'` + ', ';
+            } else {
+                groupSQL += member + ', ';
+            }
+        } else {
+            if (isValues) {
+                groupSQL += `'${member}'` + ')';
+            } else {
+                groupSQL += member + ')';
+            }
+        }
+        return /** String */ groupSQL;
     }
 
     async listAvailableDbs() {
@@ -137,6 +151,5 @@ class PQuery {
 }
 
 new PQuery({user: 'foo', password: 'bar'});
-
 
 module.exports = PQuery;
