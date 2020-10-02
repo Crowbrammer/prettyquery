@@ -14,62 +14,33 @@ class PQuery {
 
         this.testConnection();
     }
-    
-    testConnection(endAfterTest, cb) {
-        return this.query('SHOW DATABASES;')
-        .then( () => {
-            if (endAfterTest && !this.connection._protocol._quitSequence) this.connection.end();
-            return 'Connection established';
-        })
-        .catch(() => { 
-            this.authErrorThrown = true;
-            if (!this.connection._protocol._quitSequence) this.connection.end();
-            throw new Error('Your credentials suck. Replace them.');
-        })
-        .catch(() => {})
 
-    }; 
+    addMemberToGroupSQL(isValues, isEnd, /** String */ groupSQL, /** String */ member) {
+        if (!isEnd) {
+            // SQL syntax requires values (but not column) to have quotes (')
+            if (isValues) {
+                groupSQL += `'${member}'` + ', ';
+            } else {
+                groupSQL += member + ', ';
+            }
+        } else {
+            if (isValues) {
+                groupSQL += `'${member}'` + ')';
+            } else {
+                groupSQL += member + ')';
+            }
+        }
+        return /** String */ groupSQL;
+    }
 
     async createDb(dbName) {
         await this.query(`CREATE DATABASE IF NOT EXISTS ${dbName};`);
-    }
-
-    async dropDb(dbName) {
-        await this.query(`DROP DATABASE IF EXISTS ${dbName};`);
     }
 
     createIntroInsertSQL(table, columns) {
         let insertSQL = `INSERT INTO ${table}`
         insertSQL += this.createGroupSQL(columns);
         return insertSQL += ' VALUES ';
-    }
-
-    insert(/** String */ table, /** String | String[] */ columns, /** String | String[] */ values){
-
-        while (Array.isArray(values) && values.length > 5000) {
-            this.insertIteration(table, columns, values.splice(0, 5000));        
-        }
-        
-        if (Array.isArray(values) && values.length > 0 || typeof values === 'string') {
-            this.insertIteration(table, columns, values);        
-        } 
-
-    }
-
-    insertIteration(table, columns, values) {
-        let insertSQL = this.createIntroInsertSQL(table, columns);
-        // a single value
-        if (typeof values === 'string' && typeof columns === 'string' || 
-            typeof values === 'string' && Array.isArray(columns) && columns.length === 1) {
-            insertSQL +=  `('${values}');`;  
-            return this.query(insertSQL);
-        } else if (Array.isArray(values)) {
-            insertSQL += this.createGroupsSQL(values, columns) + ';';
-        } else {
-            throw new Error('values argument must be of type Array if columns.length > 1.');
-        }
-
-        this.query(insertSQL);
     }
 
     createGroupsSQL(values, columns /** For error-throwing purposes */) {
@@ -116,22 +87,36 @@ class PQuery {
         return groupSQL;
     }
 
-    addMemberToGroupSQL(isValues, isEnd, /** String */ groupSQL, /** String */ member) {
-        if (!isEnd) {
-            // SQL syntax requires values (but not column) to have quotes (')
-            if (isValues) {
-                groupSQL += `'${member}'` + ', ';
-            } else {
-                groupSQL += member + ', ';
-            }
-        } else {
-            if (isValues) {
-                groupSQL += `'${member}'` + ')';
-            } else {
-                groupSQL += member + ')';
-            }
+    async dropDb(dbName) {
+        await this.query(`DROP DATABASE IF EXISTS ${dbName};`);
+    }
+
+    insert(/** String */ table, /** String | String[] */ columns, /** String | String[] */ values){
+
+        while (Array.isArray(values) && values.length > 5000) {
+            this.insertIteration(table, columns, values.splice(0, 5000));        
         }
-        return /** String */ groupSQL;
+        
+        if (Array.isArray(values) && values.length > 0 || typeof values === 'string') {
+            this.insertIteration(table, columns, values);        
+        } 
+
+    }
+
+    insertIteration(table, columns, values) {
+        let insertSQL = this.createIntroInsertSQL(table, columns);
+        // a single value
+        if (typeof values === 'string' && typeof columns === 'string' || 
+            typeof values === 'string' && Array.isArray(columns) && columns.length === 1) {
+            insertSQL +=  `('${values}');`;  
+            return this.query(insertSQL);
+        } else if (Array.isArray(values)) {
+            insertSQL += this.createGroupsSQL(values, columns) + ';';
+        } else {
+            throw new Error('values argument must be of type Array if columns.length > 1.');
+        }
+
+        this.query(insertSQL);
     }
 
     async listAvailableDbs() {
@@ -160,6 +145,21 @@ class PQuery {
         let tables     = rawTables.map(table => table[`Tables_in_${this.db}`]);
         return tables;
     }
+    
+    testConnection(endAfterTest, cb) {
+        return this.query('SHOW DATABASES;')
+        .then( () => {
+            if (endAfterTest && !this.connection._protocol._quitSequence) this.connection.end();
+            return 'Connection established';
+        })
+        .catch(() => { 
+            this.authErrorThrown = true;
+            if (!this.connection._protocol._quitSequence) this.connection.end();
+            throw new Error('Your credentials suck. Replace them.');
+        })
+        .catch(() => {})
+
+    }; 
 
     async useDb(dbName) {
         this.db = dbName; // Need typechecking.
