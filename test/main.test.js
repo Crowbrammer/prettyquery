@@ -57,15 +57,21 @@ describe('PQuery for MySQL', function () {
     })
 
     it('Shows the tables', async function () {
-        const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
-        await pQuery.dropDb('test_db');
-        await pQuery.createDb('test_db');
-        await pQuery.useDb('test_db');
+        const pQuery = await createPQuery();
         // If no db used;
         expect(await pQuery.showCurrentDbTables()).to.deep.equal([]);
         await pQuery.query('CREATE TABLE test1 (id INTEGER PRIMARY KEY AUTO_INCREMENT)');
         await pQuery.query('CREATE TABLE test2 (id INTEGER PRIMARY KEY AUTO_INCREMENT)');
         expect(await pQuery.showCurrentDbTables()).to.deep.equal(['test1', 'test2']);
+        pQuery.connection.end();
+    });
+
+    it('Drops a table', async function() {
+        const pQuery = await createPQuery();
+        await pQuery.query('CREATE TABLE wow (id INTEGER PRIMARY KEY);');
+        expect((await pQuery.showCurrentDbTables()).length).to.equal(1)
+        await pQuery.dropTable('wow');
+        expect((await pQuery.showCurrentDbTables()).length).to.equal(0);
         pQuery.connection.end();
     });
 
@@ -257,4 +263,12 @@ describe('PQuery for MySQL', function () {
 
 })
 
+
+async function createPQuery() {
+    const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
+    await pQuery.dropDb('test_db');
+    await pQuery.createDb('test_db');
+    await pQuery.useDb('test_db');
+    return pQuery;
+}
 

@@ -90,6 +90,10 @@ class PQuery {
     async dropDb(dbName) {
         await this.query(`DROP DATABASE IF EXISTS ${dbName};`);
     }
+	
+    async dropTable(tableName) {
+        await this.query(`DROP TABLE IF EXISTS ${tableName};`);
+    }
 
     insert(/** String */ table, /** String | String[] */ columns, /** String | String[] */ values){
 
