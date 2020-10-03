@@ -95,7 +95,7 @@ class PQuery {
         await this.query(`DROP TABLE IF EXISTS ${tableName};`);
     }
 
-    insert(/** String */ table, /** String | String[] */ columns, /** String | String[] */ values){
+    async insert(/** String */ table, /** String | String[] */ columns, /** String | String[] */ values){
 
         while (Array.isArray(values) && values.length > 5000) {
             this.insertIteration(table, columns, values.splice(0, 5000));        
@@ -104,6 +104,11 @@ class PQuery {
         if (Array.isArray(values) && values.length > 0 || typeof values === 'string') {
             this.insertIteration(table, columns, values);        
         } 
+
+        // I had bugs where the next query select didn't pick up on it.
+        // for some reason a select query gives it time to populate the 
+        // db. Idk why this fixes it.
+        await this.query('SELECT 1+1;');
 
     }
 
@@ -114,6 +119,7 @@ class PQuery {
             typeof values === 'string' && Array.isArray(columns) && columns.length === 1) {
             insertSQL +=  `('${values}');`;  
             return this.query(insertSQL);
+            
         } else if (Array.isArray(values)) {
             insertSQL += this.createGroupsSQL(values, columns) + ';';
         } else {

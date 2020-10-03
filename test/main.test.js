@@ -219,7 +219,7 @@ describe('PQuery for MySQL', function () {
             arr.push(`value-${i}`);
         }
         await pQuery.insert('test', ['foo'], arr);
-        expect(pQuery.query.callCount).to.equal(1);
+        expect(pQuery.query.callCount).to.equal(2);
         
         // Reset the fake
         pQuery.query = sinon.fake();
@@ -228,7 +228,7 @@ describe('PQuery for MySQL', function () {
             arr.push(`value-${i}`);
         }
         await pQuery.insert('test', ['foo'], arr);
-        expect(pQuery.query.callCount).to.equal(2);
+        expect(pQuery.query.callCount).to.equal(3);
         pQuery.connection.end();
         
 
