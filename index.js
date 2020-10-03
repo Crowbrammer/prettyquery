@@ -107,7 +107,7 @@ class PQuery {
 
     }
 
-    insertIteration(table, columns, values) {
+    async insertIteration(table, columns, values) {
         let insertSQL = this.createIntroInsertSQL(table, columns);
         // a single value
         if (typeof values === 'string' && typeof columns === 'string' || 
@@ -120,7 +120,7 @@ class PQuery {
             throw new Error('values argument must be of type Array if columns.length > 1.');
         }
 
-        this.query(insertSQL);
+        await this.query(insertSQL);
     }
 
     async listAvailableDbs() {
