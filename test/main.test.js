@@ -194,6 +194,9 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
     })
 
+    it('Should check that the table exists before inserting');
+    it('Should check that the columns are in the table before inserting');
+
     it('Robust to different inserts', async function() {
         // Set up
         const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
@@ -212,6 +215,8 @@ describe('PQuery for MySQL', function () {
         // e values: values.length < columns.length | values.length > columns.length | values.length === columns.length
         let columns;
         let values;
+
+
 
         // columns type: array,column.length === 0,values type: array,values members type: array,values.length < columns.length
         columns = undefined;
@@ -313,12 +318,21 @@ describe('PQuery for MySQL', function () {
         // columns type: array,column.length > 1,values type: array,values members type: string,values.length < columns.length
         // columns type: array,column.length > 1,values type: array,values members type: string,values.length > columns.length
         // columns type: array,column.length > 1,values type: array,values members type: string,values.length === columns.length
+              
+        // Specific issue to my code
+        columns = ['foo', 'bar'];
+        values = ['1','1']
+        await expect(pQuery.insert('test', columns, values, 'Why')).to.not.be.rejected;
+
         // columns type: array,column.length > 1,values type: !array,values members type: array,values.length < columns.length
         // columns type: array,column.length > 1,values type: !array,values members type: array,values.length > columns.length
         // columns type: array,column.length > 1,values type: !array,values members type: array,values.length === columns.length
         // columns type: array,column.length > 1,values type: !array,values members type: string,values.length < columns.length
         // columns type: array,column.length > 1,values type: !array,values members type: string,values.length > columns.length
         // columns type: array,column.length > 1,values type: !array,values members type: string,values.length === columns.length
+                
+  
+
         // columns type: string,column.length === 0,values type: array,values members type: array,values.length < columns.length
         // columns type: string,column.length === 0,values type: array,values members type: array,values.length > columns.length
         // columns type: string,column.length === 0,values type: array,values members type: array,values.length === columns.length
