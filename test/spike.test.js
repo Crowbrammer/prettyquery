@@ -17,6 +17,35 @@ function test(options, cb) {
 }
 const testPromisify = util.promisify(test);
 
+describe('Logical Operators', function () {
+    it('false && true returns false', function () {
+        expect(false && true).to.be.false;
+    })
+
+    it('false || false && true returns false', function () {
+        expect(false || false && true).to.be.false;
+    })
+
+    it('(false || false) && true returns false', function () {
+        expect((false || false) && true).to.be.false;
+    })
+
+    it('false || true && true returns true', function () {
+        expect(false || true && true).to.be.true;
+    })
+
+    it('true || false && true returns true', function () {
+        expect(true || false && true).to.be.true;
+    })
+
+    it('lots of trues and falses', function () {
+        // !columns || (Array.isArray(columns) && columns.length === 0) && !values || Array.isArray(values) && values.length === 0
+        expect(false || (true && false) && false || true && true).to.be.true;
+        // !columns || (Array.isArray(columns) && columns.length === 0) && !values || Array.isArray(values) && values.length === 0
+        expect((false || (true && false)) && (false || true && true)).to.be.false;
+    })
+})
+
 describe('Operators', function () {
     it('Returns the full value with +=', function () {
         let a = 'Hello';

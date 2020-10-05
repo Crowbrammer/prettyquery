@@ -45,15 +45,49 @@ class PQuery {
 
     createGroupsSQL(values, columns /** For error-throwing purposes */) {
         let groupsSQL = ''
+
+        if (Array.isArray(columns)) {
+            if (columns.length === 0) {
+                throw new Error('Please specify the columns you wish to add to.');
+            } else if (columns.length === 1) {
+
+                if (Array.isArray(values)) {
+                    if (values.length > columns.length) {
+                        if (Array.isArray(values[0]) && (values[0].length > columns.length)) {
+
+                            throw new Error('You have more values than columns. Please remove values or add columns.');
+                        // If they're all strings, add the values to the table...
+                        } else {
+                            
+                        }
+                    } else if (values.length < columns.length) {
+                        throw new Error('You have more columns than values. Please add values or remove columns.');
+                    } else {
+
+                    }
+                } else {
+
+                }
+
+            } else {
+
+            }
+
+        } else if (typeof columns === 'string') {
+    
+        } else {
+            throw new Error(`The columns parameter takes an array or a string. ${typeof columns} given.`)    
+        }
+
         
         for (let i = 0; i < values.length; i++) {
             const value = values[i];
             let rowSQL = '';
-            if (typeof value === 'string' && columns.length === 1) {
+            if (!Array.isArray(value) && columns.length === 1) {
                 rowSQL += `('${value}')`;
             } else if (Array.isArray(value)) {
                 rowSQL = this.createGroupSQL(value, /** isValues === */ true);
-            } else if (typeof value === 'string' && columns.length === 1) {
+            } else if (!Array.isArray(value) && columns.length === 1) {
                 throw new Error('For inserts with more than one column, the array must contain arrays, not strings.');
             }
 
@@ -95,7 +129,9 @@ class PQuery {
         await this.query(`DROP TABLE IF EXISTS ${tableName};`);
     }
 
-    async insert(/** String */ table, /** String | String[] */ columns, /** String | String[] */ values){
+    async insert(/** String */ table, /** String | String[] */ columns, /** String | String[] */ values, message){
+        
+        this.guardInsert(columns, values);
 
         while (Array.isArray(values) && values.length > 5000) {
             this.insertIteration(table, columns, values.splice(0, 5000));        
@@ -110,6 +146,33 @@ class PQuery {
         // db. Idk why this fixes it.
         await this.query('SELECT 1+1;');
 
+    }
+
+    guardInsert(columns, values) {
+        const hasColumns = (columns && (Array.isArray(columns) && columns.length > 0));
+        const hasValues = (values && (Array.isArray(values) && values.length > 0));
+
+        if (!hasColumns && !hasValues) {
+            throw new Error('No columns nor values defined');
+        } else if (!hasColumns && hasValues) {
+            throw new Error('No columns defined');
+        } else if (hasColumns && !hasValues) {
+            throw new Error('No values defined');
+        } else {
+            if (columns.length > 1) {
+                if (Array.isArray(values[0])) {
+                    if (values[0].length > columns.length) {
+                        throw new Error('You have more values than columns. Please add columns or remove values.');
+                    } else if (values[0].length < columns.length) {
+                        throw new Error('You have more columns than values. Please add values or remove columns.');
+                    }
+                }
+            } else if (columns.length === 1) {
+                // if (Array.isArray(values[0]) {}
+            } else {
+                throw new Error('Shouldn\'t be able to get to this branch... No columns defined...')
+            }
+        }
     }
 
     async insertIteration(table, columns, values) {

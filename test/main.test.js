@@ -194,6 +194,231 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
     })
 
+    it('Robust to different inserts', async function() {
+        // Set up
+        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
+        await pQuery.query('DROP DATABASE IF EXISTS test_db;');
+        expect(await pQuery.listAvailableDbs()).to.not.include('test_db');
+        await pQuery.createDb('test_db');
+        await pQuery.useDb('test_db');
+        await pQuery.query('CREATE TABLE test (id INTEGER PRIMARY KEY AUTO_INCREMENT, foo VARCHAR(20), bar VARCHAR(20));')
+
+
+        // Have every branch covered
+        // a columns type: array | string | (!string || array)
+        // b columns: column.length === 0 | column.length === 1 | column.length > 1 | 
+        // c values: array | !array
+        // d typeof values members: array | string
+        // e values: values.length < columns.length | values.length > columns.length | values.length === columns.length
+        let columns;
+        let values;
+
+        // columns type: array,column.length === 0,values type: array,values members type: array,values.length < columns.length
+        columns = undefined;
+        values = undefined;
+        await expect(pQuery.insert('test', columns, values)).to.be.rejectedWith(Error, 'No columns nor values defined', 1);
+        
+        columns = [];
+        values = undefined;
+        await expect(pQuery.insert('test', columns, values)).to.be.rejectedWith(Error, 'No columns nor values defined', 2);
+        
+        // columns type: array,column.length === 0,values type: array,values members type: array,values.length > columns.length
+        
+        columns = [];
+        values = [['blah']];
+        await expect(pQuery.insert('test', columns, values)).to.be.rejectedWith(Error, 'No columns defined', 3);
+        
+        // columns type: array,column.length === 0,values type: array,values members type: array,values.length === columns.length
+        
+        columns = [];
+        values = [];
+        await expect(pQuery.insert('test', columns, values)).to.be.rejectedWith(Error, 'No columns nor values defined', 4);
+        
+        // columns type: array,column.length === 0,values type: array,values members type: string,values.length < columns.length
+        
+        columns = [];
+        values = undefined;
+        await expect(pQuery.insert('test', columns, values)).to.be.rejectedWith(Error, 'No columns nor values defined', 5);
+        
+        // columns type: array,column.length === 0,values type: array,values members type: string,values.length > columns.length
+        
+        columns = [];
+        values = ['Test'];
+        await expect(pQuery.insert('test', columns, values)).to.be.rejectedWith(Error, 'No columns defined', 6);
+        
+        // columns type: array,column.length === 0,values type: array,values members type: string,values.length === columns.length
+        
+        columns = [];
+        values = [];
+        await expect(pQuery.insert('test', columns, values)).to.be.rejectedWith(Error, 'No columns nor values defined', 7);
+        
+        // === Possibly not necessary to test...
+        
+        // columns type: array,column.length === 0,values type: !array,values members type: array,values.length < columns.length
+        // columns type: array,column.length === 0,values type: !array,values members type: array,values.length > columns.length
+        // columns type: array,column.length === 0,values type: !array,values members type: array,values.length === columns.length
+        // columns type: array,column.length === 0,values type: !array,values members type: string,values.length < columns.length
+        // columns type: array,column.length === 0,values type: !array,values members type: string,values.length > columns.length
+        // columns type: array,column.length === 0,values type: !array,values members type: string,values.length === columns.length
+        
+        // ===
+
+        // columns type: array,column.length === 1,values type: array,values members type: array,values.length < columns.length
+        
+        await expect(pQuery.insert('test', columns = ['test'], values = [])).to.be.rejectedWith(Error, 'No values defined');
+        
+        // columns type: array,column.length === 1,values type: array,values members type: array,values.length > columns.length
+
+        columns = ['foo'];
+        values = [['test'], ['wow']];
+        await expect(pQuery.insert('test', columns, values)).to.eventually.not.be.rejected;
+        
+        // columns type: array,column.length === 1,values type: array,values members type: array,values.length === columns.length
+        
+        columns = ['foo'];
+        values = [['test']];
+        await expect(pQuery.insert('test', columns, values)).to.eventually.not.be.rejected;
+                
+        // columns type: array,column.length === 1,values type: array,values members type: string,values.length < columns.length
+        
+        columns = ['foo'];
+        values = [['test']];
+        await expect(pQuery.insert('test', columns, values)).to.eventually.not.be.rejected;
+        
+        // columns type: array,column.length === 1,values type: array,values members type: string,values.length > columns.length
+        
+        columns = ['foo'];
+        values = ['test', 'this'];
+        await expect(pQuery.insert('test', columns, values)).to.eventually.not.be.rejected;
+        
+        // columns type: array,column.length === 1,values type: array,values members type: string,values.length === columns.length
+        
+        columns = ['foo'];
+        values = ['test'];
+        await expect(pQuery.insert('test', columns, values)).to.eventually.not.be.rejected;
+        
+        // columns type: array,column.length === 1,values type: !array,values members type: array,values.length < columns.length
+        // columns type: array,column.length === 1,values type: !array,values members type: array,values.length > columns.length
+        // columns type: array,column.length === 1,values type: !array,values members type: array,values.length === columns.length
+        // columns type: array,column.length === 1,values type: !array,values members type: string,values.length < columns.length
+        // columns type: array,column.length === 1,values type: !array,values members type: string,values.length > columns.length
+        // columns type: array,column.length === 1,values type: !array,values members type: string,values.length === columns.length
+        // columns type: array,column.length > 1,values type: array,values members type: array,values.length < columns.length
+        
+        columns = ['foo', 'bar'];
+        values = [['test']];
+        await expect(pQuery.insert('test', columns, values)).to.be.rejectedWith(Error, 'You have more columns than values. Please add values or remove columns.');
+        // columns type: array,column.length > 1,values type: array,values members type: array,values.length > columns.length
+        // columns type: array,column.length > 1,values type: array,values members type: array,values.length === columns.length
+        // columns type: array,column.length > 1,values type: array,values members type: string,values.length < columns.length
+        // columns type: array,column.length > 1,values type: array,values members type: string,values.length > columns.length
+        // columns type: array,column.length > 1,values type: array,values members type: string,values.length === columns.length
+        // columns type: array,column.length > 1,values type: !array,values members type: array,values.length < columns.length
+        // columns type: array,column.length > 1,values type: !array,values members type: array,values.length > columns.length
+        // columns type: array,column.length > 1,values type: !array,values members type: array,values.length === columns.length
+        // columns type: array,column.length > 1,values type: !array,values members type: string,values.length < columns.length
+        // columns type: array,column.length > 1,values type: !array,values members type: string,values.length > columns.length
+        // columns type: array,column.length > 1,values type: !array,values members type: string,values.length === columns.length
+        // columns type: string,column.length === 0,values type: array,values members type: array,values.length < columns.length
+        // columns type: string,column.length === 0,values type: array,values members type: array,values.length > columns.length
+        // columns type: string,column.length === 0,values type: array,values members type: array,values.length === columns.length
+        // columns type: string,column.length === 0,values type: array,values members type: string,values.length < columns.length
+        // columns type: string,column.length === 0,values type: array,values members type: string,values.length > columns.length
+        // columns type: string,column.length === 0,values type: array,values members type: string,values.length === columns.length
+        // columns type: string,column.length === 0,values type: !array,values members type: array,values.length < columns.length
+        // columns type: string,column.length === 0,values type: !array,values members type: array,values.length > columns.length
+        // columns type: string,column.length === 0,values type: !array,values members type: array,values.length === columns.length
+        // columns type: string,column.length === 0,values type: !array,values members type: string,values.length < columns.length
+        // columns type: string,column.length === 0,values type: !array,values members type: string,values.length > columns.length
+        // columns type: string,column.length === 0,values type: !array,values members type: string,values.length === columns.length
+        // columns type: string,column.length === 1,values type: array,values members type: array,values.length < columns.length
+        // columns type: string,column.length === 1,values type: array,values members type: array,values.length > columns.length
+        // columns type: string,column.length === 1,values type: array,values members type: array,values.length === columns.length
+        // columns type: string,column.length === 1,values type: array,values members type: string,values.length < columns.length
+        // columns type: string,column.length === 1,values type: array,values members type: string,values.length > columns.length
+        // columns type: string,column.length === 1,values type: array,values members type: string,values.length === columns.length
+        // columns type: string,column.length === 1,values type: !array,values members type: array,values.length < columns.length
+        // columns type: string,column.length === 1,values type: !array,values members type: array,values.length > columns.length
+        // columns type: string,column.length === 1,values type: !array,values members type: array,values.length === columns.length
+        // columns type: string,column.length === 1,values type: !array,values members type: string,values.length < columns.length
+        // columns type: string,column.length === 1,values type: !array,values members type: string,values.length > columns.length
+        // columns type: string,column.length === 1,values type: !array,values members type: string,values.length === columns.length
+        // columns type: string,column.length > 1,values type: array,values members type: array,values.length < columns.length
+        // columns type: string,column.length > 1,values type: array,values members type: array,values.length > columns.length
+        // columns type: string,column.length > 1,values type: array,values members type: array,values.length === columns.length
+        // columns type: string,column.length > 1,values type: array,values members type: string,values.length < columns.length
+        // columns type: string,column.length > 1,values type: array,values members type: string,values.length > columns.length
+        // columns type: string,column.length > 1,values type: array,values members type: string,values.length === columns.length
+        // columns type: string,column.length > 1,values type: !array,values members type: array,values.length < columns.length
+        // columns type: string,column.length > 1,values type: !array,values members type: array,values.length > columns.length
+        // columns type: string,column.length > 1,values type: !array,values members type: array,values.length === columns.length
+        // columns type: string,column.length > 1,values type: !array,values members type: string,values.length < columns.length
+        // columns type: string,column.length > 1,values type: !array,values members type: string,values.length > columns.length
+        // columns type: string,column.length > 1,values type: !array,values members type: string,values.length === columns.length
+        // columns type: (!string || array),column.length === 0,values type: array,values members type: array,values.length < columns.length
+        // columns type: (!string || array),column.length === 0,values type: array,values members type: array,values.length > columns.length
+        // columns type: (!string || array),column.length === 0,values type: array,values members type: array,values.length === columns.length
+        // columns type: (!string || array),column.length === 0,values type: array,values members type: string,values.length < columns.length
+        // columns type: (!string || array),column.length === 0,values type: array,values members type: string,values.length > columns.length
+        // columns type: (!string || array),column.length === 0,values type: array,values members type: string,values.length === columns.length
+        // columns type: (!string || array),column.length === 0,values type: !array,values members type: array,values.length < columns.length
+        // columns type: (!string || array),column.length === 0,values type: !array,values members type: array,values.length > columns.length
+        // columns type: (!string || array),column.length === 0,values type: !array,values members type: array,values.length === columns.length
+        // columns type: (!string || array),column.length === 0,values type: !array,values members type: string,values.length < columns.length
+        // columns type: (!string || array),column.length === 0,values type: !array,values members type: string,values.length > columns.length
+        // columns type: (!string || array),column.length === 0,values type: !array,values members type: string,values.length === columns.length
+        // columns type: (!string || array),column.length === 1,values type: array,values members type: array,values.length < columns.length
+        // columns type: (!string || array),column.length === 1,values type: array,values members type: array,values.length > columns.length
+        // columns type: (!string || array),column.length === 1,values type: array,values members type: array,values.length === columns.length
+        // columns type: (!string || array),column.length === 1,values type: array,values members type: string,values.length < columns.length
+        // columns type: (!string || array),column.length === 1,values type: array,values members type: string,values.length > columns.length
+        // columns type: (!string || array),column.length === 1,values type: array,values members type: string,values.length === columns.length
+        // columns type: (!string || array),column.length === 1,values type: !array,values members type: array,values.length < columns.length
+        // columns type: (!string || array),column.length === 1,values type: !array,values members type: array,values.length > columns.length
+        // columns type: (!string || array),column.length === 1,values type: !array,values members type: array,values.length === columns.length
+        // columns type: (!string || array),column.length === 1,values type: !array,values members type: string,values.length < columns.length
+        // columns type: (!string || array),column.length === 1,values type: !array,values members type: string,values.length > columns.length
+        // columns type: (!string || array),column.length === 1,values type: !array,values members type: string,values.length === columns.length
+        // columns type: (!string || array),column.length > 1,values type: array,values members type: array,values.length < columns.length
+        // columns type: (!string || array),column.length > 1,values type: array,values members type: array,values.length > columns.length
+        // columns type: (!string || array),column.length > 1,values type: array,values members type: array,values.length === columns.length
+        // columns type: (!string || array),column.length > 1,values type: array,values members type: string,values.length < columns.length
+        // columns type: (!string || array),column.length > 1,values type: array,values members type: string,values.length > columns.length
+        // columns type: (!string || array),column.length > 1,values type: array,values members type: string,values.length === columns.length
+        // columns type: (!string || array),column.length > 1,values type: !array,values members type: array,values.length < columns.length
+        // columns type: (!string || array),column.length > 1,values type: !array,values members type: array,values.length > columns.length
+        // columns type: (!string || array),column.length > 1,values type: !array,values members type: array,values.length === columns.length
+        // columns type: (!string || array),column.length > 1,values type: !array,values members type: string,values.length < columns.length
+        // columns type: (!string || array),column.length > 1,values type: !array,values members type: string,values.length > columns.length
+        // columns type: (!string || array),column.length > 1,values type: !array,values members type: string,values.length === columns.length
+
+        pQuery.connection.end();
+    });
+
+    xit('Old: Is robust to different types of inserts', async function () {
+        // Set up
+        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
+        await pQuery.query('DROP DATABASE IF EXISTS test_db;');
+        expect(await pQuery.listAvailableDbs()).to.not.include('test_db');
+        await pQuery.createDb('test_db');
+        await pQuery.useDb('test_db');
+        await pQuery.query('CREATE TABLE people (id INTEGER PRIMARY KEY AUTO_INCREMENT, email VARCHAR(255));')
+        await pQuery.query('CREATE TABLE projects (id INTEGER PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255));')
+        await pQuery.query('CREATE TABLE IF NOT EXISTS person_projects \
+        (person_id INTEGER, project_id INTEGER, datetime_opted_out DATETIME, \
+            PRIMARY KEY (person_id, project_id), \
+            FOREIGN KEY (person_id) REFERENCES people(id),\
+            FOREIGN KEY (project_id) REFERENCES projects(id));');
+
+        // Let the embarassment wash over you. Immerse yourself in it. Keep going. Keep singing. 
+        // Keep singing. 
+
+        await pQuery.insert('person_projects', ['person_id', 'project_id'], ['1','1']);
+        expect((await pQuery.query('SELECT * FROM person_projects')).length).to.equal(1);
+
+        // Add the person and project
+    })
+
     /**
         [X] I don't know how to go about this -> Take a deep breath and try enclosing things
         in contexts... ask what should repeat... consider recursion... 
