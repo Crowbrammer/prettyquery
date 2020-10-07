@@ -47,7 +47,7 @@ class PQuery {
         let groupsSQL = ''
 
         if (Array.isArray(values)) {
-            if (values.every(value => typeof value === 'string')) {
+            if (!values.every(value => Array.isArray(value))) {
                 if (columns.length > 1) {
                     if (columns.length === values.length) {
                         if (message === 'Why') console.log('WOW');
