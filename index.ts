@@ -11,6 +11,7 @@ class PQuery {
             database: this.db
         })
         this.authErrorThrown = false;
+        this.testConnection();
     }
 
     addMemberToGroupSQL(isValues, isEnd, /** String */ groupSQL, /** String */ member) {
