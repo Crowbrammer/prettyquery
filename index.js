@@ -10,7 +10,6 @@ class PQuery {
             database: this.db
         });
         this.authErrorThrown = false;
-        this.testConnection();
     }
     addMemberToGroupSQL(isValues, isEnd, groupSQL, member) {
         if (!isEnd) {

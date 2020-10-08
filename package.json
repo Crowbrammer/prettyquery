@@ -1,6 +1,6 @@
 {
   "name": "prettyquery",
-  "version": "1.6.8",
+  "version": "1.6.9",
   "main": "index.js",
   "dependencies": {
     "chai-as-promised": "^7.1.1",
