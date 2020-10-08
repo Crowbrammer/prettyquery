@@ -5,6 +5,18 @@ const sinon  = require('sinon');
 
 describe('PQuery for MySQL', function () {
 
+    describe('Convenience Methods', function() {
+        it('Pulls a single value', async function () {
+            const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD, db: process.env.DATABASE });
+            await pQuery.query('CREATE TABLE IF NOT EXISTS convenience_test (id INTEGER PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255));');
+            await pQuery.insert('convenience_test', ['name'], [['wow'], ['how'], ['pow']]);
+            const fastSelect = await pQuery.select('*', 'convenience_test', 'id', '1');
+            expect(fastSelect.length).to.equal(1);
+            expect(fastSelect[0].name).to.equal('wow');
+            // pQuery.select('* FROM convenience_test WHERE id = 1');
+        })
+    });
+
     it('Shows an error if the creds are wrong', function (done) {
         const pQuery = new PQuery({user: 'foo', password: 'bar'});
         let intervals = 0;
