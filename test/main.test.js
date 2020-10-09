@@ -6,14 +6,31 @@ const sinon  = require('sinon');
 describe('PQuery for MySQL', function () {
 
     describe('Convenience Methods', function() {
+        let pQuery;
+        before(async function () {
+            pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD, db: process.env.DATABASE });
+        })
+
+        after(async function () {
+            pQuery.connection.end();
+        })
+
         it('Pulls a single value', async function () {
-            const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD, db: process.env.DATABASE });
+            await pQuery.query('DROP TABLE IF EXISTS convenience_test;');
             await pQuery.query('CREATE TABLE IF NOT EXISTS convenience_test (id INTEGER PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255));');
             await pQuery.insert('convenience_test', ['name'], [['wow'], ['how'], ['pow']]);
             const fastSelect = await pQuery.select('*', 'convenience_test', 'id', '1');
             expect(fastSelect.length).to.equal(1);
             expect(fastSelect[0].name).to.equal('wow');
-            // pQuery.select('* FROM convenience_test WHERE id = 1');
+        })
+
+        it('Pulls many values', async function () {
+            await pQuery.query('DROP TABLE IF EXISTS convenience_test;');
+            await pQuery.query('CREATE TABLE IF NOT EXISTS convenience_test (id INTEGER PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255));');
+            await pQuery.insert('convenience_test', ['name'], [['wow'], ['how'], ['pow']]);
+            const fastSelect = await pQuery.select('*', 'convenience_test');
+            expect(fastSelect.length).to.equal(3);
+            expect(fastSelect[2].name).to.equal('pow');
         })
     });
 

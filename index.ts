@@ -275,7 +275,13 @@ class PQuery {
     }
 
     async select(selector: string, table: string, whereColumn: string, whereValue: string): Promise<any> {
-        return this.query(`SELECT ${selector} FROM ${table} WHERE ${whereColumn} = ${whereValue}`);
+        if (whereColumn && whereValue) {
+            return this.query(`SELECT ${selector} FROM ${table} WHERE ${whereColumn} = ${whereValue}`);
+        } else if (whereColumn && !whereValue || !whereColumn && whereValue) {
+            throw new Error('If a where argument is provided, both the cloumn and the value need to be provided');
+        } else {
+            return this.query(`SELECT ${selector} FROM ${table};`);
+        }
     };
 
     async showCurrentDb() {
