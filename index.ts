@@ -296,7 +296,7 @@ class PQuery {
         return tables;
     }
     
-    testConnection(endAfterTest, cb) {
+    async testConnection(endAfterTest, cb) {
         return this.query('SHOW DATABASES;')
         .then( () => {
             if (endAfterTest && !this.connection._protocol._quitSequence) this.connection.end();
