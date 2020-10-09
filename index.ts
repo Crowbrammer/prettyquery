@@ -18,13 +18,22 @@ class PQuery {
         if (!isEnd) {
             // SQL syntax requires values (but not column) to have quotes (')
             if (isValues) {
-                groupSQL += `'${member}'` + ', ';
+                if (isSQLFunction(values)) { // Don't use ' ' for functions.
+                    groupSQL += `${member}` + ', ';
+                } else {
+                    groupSQL += `${member}` + ', ';
+                }
+                
             } else {
                 groupSQL += member + ', ';
             }
         } else {
             if (isValues) {
-                groupSQL += `'${member}'` + ')';
+                if (isSQLFunction(values)) { // Don't use ' ' for functions.
+                    groupSQL += `${member}` + ')';
+                } else {
+                    groupSQL += `'${member}'` + ')';
+                }
             } else {
                 groupSQL += member + ')';
             }
@@ -91,14 +100,22 @@ class PQuery {
                         if (columns.length > 1) {
                             throw new Error('For inserts with more than one column, the array must contain arrays, not strings.');
                         } else if (columns.length === 1) {
-                            rowSQL += `('${value}')`;
+                            if (isSQLFunction(values)) { // Don't use ' ' for functions.
+                                rowSQL += `(${value})`;
+                            } else {
+                                rowSQL += `('${value}')`;
+                            }
                         } else {
                             throw new Error('Need to define a column. This error shouldn\'t be able to throw here though...');
                         }
                     }
         
                     if (!Array.isArray(value) && columns.length === 1) {
-                        rowSQL += `('${value}')`;
+                        if (isSQLFunction(values)) { // Don't use ' ' for functions.
+                            rowSQL += `(${value})`;
+                        } else {
+                            rowSQL += `('${value}')`;
+                        }
                     } else if (Array.isArray(value)) {
                         rowSQL = this.createGroupSQL(value, /** isValues === */ true);
                     } else if (!Array.isArray(value) && columns.length === 1) {
@@ -228,31 +245,27 @@ class PQuery {
             
         } else {
             if (typeof columns === 'string') {
-                insertSQL +=  `('${values}');`;  
+                if (isSQLFunction(values)) { // Don't use ' ' for functions.
+                    insertSQL +=  `(${values});`;  
+                } else {
+                    insertSQL +=  `('${values}');`;  
+                }
                 return this.query(insertSQL);
             } else if (Array.isArray(columns)) {
                 if (columns.length > 1) {
                     throw new Error('String as values only works for single-column inserts');
                 } else {
-                    insertSQL +=  `('${values}');`;  
+                    if (isSQLFunction(values)) { // Don't use ' ' for functions.
+                        insertSQL +=  `(${values});`;  
+                    } else {
+                        insertSQL +=  `('${values}');`;  
+                    }
                     return this.query(insertSQL);
                 }
             } else {
                 throw new Error('The column needs to either be a string or an array'); 
             }
         }
-
-        // Old
-        // if (typeof values === 'string' && typeof columns === 'string' || 
-        //     typeof values === 'string' && Array.isArray(columns) && columns.length === 1) {
-        //     insertSQL +=  `('${values}');`;  
-        //     return this.query(insertSQL);
-            
-        // } else if (Array.isArray(values)) {
-        //     insertSQL += this.createGroupsSQL(values, columns) + ';';
-        // } else {
-        //     throw new Error('values argument must be of type Array if columns.length > 1.');
-        // }
 
         if (message === 'Why') console.log(insertSQL);
 
@@ -322,3 +335,7 @@ class PQuery {
 new PQuery({user: 'foo', password: 'bar'});
 
 module.exports = PQuery;
+
+function isSQLFunction(columns: string) {
+    return /\w+\(\)/.test(columns);
+}

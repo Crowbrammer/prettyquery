@@ -15,7 +15,12 @@ class PQuery {
     addMemberToGroupSQL(isValues, isEnd, groupSQL, member) {
         if (!isEnd) {
             if (isValues) {
-                groupSQL += `'${member}'` + ', ';
+                if (isSQLFunction(values)) {
+                    groupSQL += `${member}` + ', ';
+                }
+                else {
+                    groupSQL += `${member}` + ', ';
+                }
             }
             else {
                 groupSQL += member + ', ';
@@ -23,7 +28,12 @@ class PQuery {
         }
         else {
             if (isValues) {
-                groupSQL += `'${member}'` + ')';
+                if (isSQLFunction(values)) {
+                    groupSQL += `${member}` + ')';
+                }
+                else {
+                    groupSQL += `'${member}'` + ')';
+                }
             }
             else {
                 groupSQL += member + ')';
@@ -91,14 +101,24 @@ class PQuery {
                             throw new Error('For inserts with more than one column, the array must contain arrays, not strings.');
                         }
                         else if (columns.length === 1) {
-                            rowSQL += `('${value}')`;
+                            if (isSQLFunction(values)) {
+                                rowSQL += `(${value})`;
+                            }
+                            else {
+                                rowSQL += `('${value}')`;
+                            }
                         }
                         else {
                             throw new Error('Need to define a column. This error shouldn\'t be able to throw here though...');
                         }
                     }
                     if (!Array.isArray(value) && columns.length === 1) {
-                        rowSQL += `('${value}')`;
+                        if (isSQLFunction(values)) {
+                            rowSQL += `(${value})`;
+                        }
+                        else {
+                            rowSQL += `('${value}')`;
+                        }
                     }
                     else if (Array.isArray(value)) {
                         rowSQL = this.createGroupSQL(value, true);
@@ -223,7 +243,12 @@ class PQuery {
         }
         else {
             if (typeof columns === 'string') {
-                insertSQL += `('${values}');`;
+                if (isSQLFunction(values)) {
+                    insertSQL += `(${values});`;
+                }
+                else {
+                    insertSQL += `('${values}');`;
+                }
                 return this.query(insertSQL);
             }
             else if (Array.isArray(columns)) {
@@ -231,7 +256,12 @@ class PQuery {
                     throw new Error('String as values only works for single-column inserts');
                 }
                 else {
-                    insertSQL += `('${values}');`;
+                    if (isSQLFunction(values)) {
+                        insertSQL += `(${values});`;
+                    }
+                    else {
+                        insertSQL += `('${values}');`;
+                    }
                     return this.query(insertSQL);
                 }
             }
@@ -279,7 +309,7 @@ class PQuery {
         let tables = rawTables.map(table => table[`Tables_in_${this.db}`]);
         return tables;
     }
-    testConnection(endAfterTest, cb) {
+    async testConnection(endAfterTest, cb) {
         return this.query('SHOW DATABASES;')
             .then(() => {
             if (endAfterTest && !this.connection._protocol._quitSequence)
@@ -302,4 +332,7 @@ class PQuery {
 }
 new PQuery({ user: 'foo', password: 'bar' });
 module.exports = PQuery;
+function isSQLFunction(columns) {
+    return /\w+\(\)/.test(columns);
+}
 //# sourceMappingURL=index.js.map

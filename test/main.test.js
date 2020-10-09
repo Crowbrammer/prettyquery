@@ -169,6 +169,35 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
     })
 
+    describe('Can insert Dates', function () {
+        let pQuery;
+        before(async function () {
+            pQuery = await createPQuery();
+        });
+
+        it('Is set up', async function () {
+            await pQuery.query('CREATE TABLE test (id INTEGER PRIMARY KEY AUTO_INCREMENT, foo DATETIME, bar DATETIME);');
+            // Test single inserts.
+            await pQuery.insert('test', ['foo'], 'NOW()');
+            let testValues = await pQuery.query('SELECT * FROM test;');
+            expect(testValues.length).to.equal(1);
+        })
+
+        it('Lets me use the NOW function in for a single column, single insert', async function () {
+            await pQuery.insert('test', ['foo'], 'NOW()');
+            const date = (await pQuery.query('SELECT * FROM test'))[1].foo;
+            const re   = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/ // The RegEx for the date.
+            expect(re.test(date)).to.be.true;
+        })
+
+        it('Lets me use the NOW function in for a double column, single insert', async function () {
+            await pQuery.insert('test', ['foo'], 'NOW()');
+            const date = (await pQuery.query('SELECT * FROM test'))[1].foo;
+            const re   = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/ // The RegEx for the date.
+            expect(re.test(date)).to.be.true;
+        })
+    })
+
     it('Inserts one thing into the moaning, ready-for-it DB', async function () {
         // Set up
         const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
@@ -533,7 +562,7 @@ describe('PQuery for MySQL', function () {
 
 
 async function createPQuery() {
-    const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
+    const pQuery = new PQuery({ user: process.env.USER_TEST, password: process.env.PASSWORD_TEST });
     await pQuery.dropDb('test_db');
     await pQuery.createDb('test_db');
     await pQuery.useDb('test_db');
