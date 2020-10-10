@@ -286,7 +286,6 @@ class PQuery {
         this.query(`USE ${dbName};`);
     }
 }
-new PQuery({ user: 'foo', password: 'bar' });
 module.exports = PQuery;
 function isTheEndOf(i, groupArray) {
     return i < groupArray.length - 1;

@@ -313,8 +313,6 @@ class PQuery {
     
 }
 
-new PQuery({user: 'foo', password: 'bar'});
-
 module.exports = PQuery;
 
 function isTheEndOf(i: number, groupArray: any[]) {

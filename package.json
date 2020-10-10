@@ -1,6 +1,6 @@
 {
   "name": "prettyquery",
-  "version": "1.6.15",
+  "version": "1.6.16",
   "main": "index.js",
   "dependencies": {
     "@types/node": "^14.11.8",
