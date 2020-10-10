@@ -1,9 +1,9 @@
 const mysql = require('mysql');
 class PQuery {
-    constructor(options) {
+    constructor(options = {}) {
         this.user = options.user || process.env.USER;
         this.password = options.password || process.env.PASSWORD;
-        this.db = options.db || process.env.DATABASE;
+        this.db = options.db;
         this.connection = mysql.createConnection({
             user: this.user,
             password: this.password,
@@ -12,10 +12,10 @@ class PQuery {
         this.authErrorThrown = false;
         this.testConnection();
     }
-    addMemberToGroupSQL(isValues, isEnd, groupSQL, member) {
+    addMemberToGroupSQL(isValues, isEnd, groupSQL = '(', member) {
         if (!isEnd) {
             if (isValues) {
-                if (isSQLFunction(values)) {
+                if (isSQLFunction(member)) {
                     groupSQL += `${member}` + ', ';
                 }
                 else {
@@ -28,7 +28,7 @@ class PQuery {
         }
         else {
             if (isValues) {
-                if (isSQLFunction(values)) {
+                if (isSQLFunction(member)) {
                     groupSQL += `${member}` + ')';
                 }
                 else {
@@ -49,70 +49,18 @@ class PQuery {
         insertSQL += this.createGroupSQL(columns);
         return insertSQL += ' VALUES ';
     }
-    createGroupsSQL(values, columns, message) {
+    createGroupsSQL(columns, values, message) {
         let groupsSQL = '';
-        if (Array.isArray(values)) {
-            if (!values.every(value => Array.isArray(value))) {
-                if (columns.length > 1) {
-                    if (columns.length === values.length) {
-                        if (message === 'Why')
-                            console.log('WOW');
-                        groupsSQL = this.createGroupSQL(values, true);
-                    }
-                    else {
-                        throw new Error('For inserts with more than one column, the array must contain arrays, or a number of strings equal to the number of the columns.');
-                    }
-                }
-                else if (columns.length === 1) {
-                    if (columns.length === values.length) {
-                        groupsSQL += `('${values}')`;
-                    }
-                    else {
-                        values.forEach(value => groupsSQL += this.createGroupSQL(value, true) + ',');
-                        groupsSQL = groupsSQL.substring(0, groupsSQL.length - 1);
-                    }
+        if (isArrayOfArrays(values)) {
+            for (let i = 0; i < values.length; i++) {
+                const value = values[i];
+                console.log(value);
+                let rowSQL = '';
+                if (Array.isArray(value)) {
+                    rowSQL = this.createGroupSQL(value, true);
                 }
                 else {
-                    throw new Error('Need to define a column. This error shouldn\'t be able to throw here though...');
-                }
-            }
-            else if (values.every(value => Array.isArray(value))) {
-                for (let i = 0; i < values.length; i++) {
-                    const value = values[i];
-                    let rowSQL = '';
-                    if (Array.isArray(value)) {
-                        if (columns.length > 0) {
-                            if (columns.length === value.length) {
-                                rowSQL = this.createGroupSQL(value, true);
-                            }
-                            else if (columns.length > values.length) {
-                                throw new Error('More columns than values. Add more values or remove columns Shouldn\'t be able to throw here though.');
-                            }
-                            else {
-                                throw new Error('More values than than columns. Add more columns or remove values. Shouldn\'t be able to throw here though.');
-                            }
-                        }
-                        else {
-                            throw new Error('Need to define a column. This error shouldn\'t be able to throw here though...');
-                        }
-                    }
-                    else {
-                        if (columns.length > 1) {
-                            throw new Error('For inserts with more than one column, the array must contain arrays, not strings.');
-                        }
-                        else if (columns.length === 1) {
-                            if (isSQLFunction(values)) {
-                                rowSQL += `(${value})`;
-                            }
-                            else {
-                                rowSQL += `('${value}')`;
-                            }
-                        }
-                        else {
-                            throw new Error('Need to define a column. This error shouldn\'t be able to throw here though...');
-                        }
-                    }
-                    if (!Array.isArray(value) && columns.length === 1) {
+                    if (columns.length === 1) {
                         if (isSQLFunction(values)) {
                             rowSQL += `(${value})`;
                         }
@@ -120,34 +68,50 @@ class PQuery {
                             rowSQL += `('${value}')`;
                         }
                     }
-                    else if (Array.isArray(value)) {
-                        rowSQL = this.createGroupSQL(value, true);
-                    }
-                    else if (!Array.isArray(value) && columns.length === 1) {
-                        throw new Error('For inserts with more than one column, the array must contain arrays, not strings.');
-                    }
-                    if (i < values.length - 1) {
-                        groupsSQL += rowSQL + ', ';
-                    }
                     else {
-                        groupsSQL += rowSQL;
+                        throw new Error('You shouldn\'t be able to get here...');
                     }
                 }
-            }
-            else {
-                throw new Error('Make the values in your array identical in type and, if an array, identical in length');
+                if (i < values.length - 1) {
+                    groupsSQL += rowSQL + ', ';
+                }
+                else {
+                    groupsSQL += rowSQL;
+                }
+                console.log(rowSQL);
             }
         }
         else {
+            if (columns.length > 1) {
+                if (columns.length === values.length) {
+                    groupsSQL = this.createGroupSQL(values, true);
+                }
+                else {
+                    throw new Error('For inserts with more than one column, the array must contain arrays, or a number of strings equal to the number of the columns.');
+                }
+            }
+            else if (columns.length === 1) {
+                if (columns.length === values.length) {
+                    groupsSQL += `('${values}')`;
+                }
+                else {
+                    values.forEach(value => groupsSQL += this.createGroupSQL(value, true) + ',');
+                    groupsSQL = groupsSQL.substring(0, groupsSQL.length - 1);
+                }
+            }
+            else {
+                throw new Error('Need to define a column. This error shouldn\'t be able to throw here though...');
+            }
         }
         return groupsSQL;
     }
     createGroupSQL(groupArray, isValues) {
-        let groupSQL = '(';
+        let groupSQL;
         if (Array.isArray(groupArray)) {
             for (let i = 0; i < groupArray.length; i++) {
                 const member = groupArray[i];
-                if (i < groupArray.length - 1) {
+                console.log(member);
+                if (isTheEndOf(i, groupArray)) {
                     groupSQL = this.addMemberToGroupSQL(isValues, false, groupSQL, member);
                 }
                 else {
@@ -155,11 +119,8 @@ class PQuery {
                 }
             }
         }
-        else if (typeof groupArray === 'string') {
-            groupSQL = this.addMemberToGroupSQL(isValues, true, groupSQL, groupArray);
-        }
         else {
-            throw new Error('Under construction...');
+            groupSQL = this.addMemberToGroupSQL(isValues, true, groupSQL, groupArray);
         }
         return groupSQL;
     }
@@ -220,18 +181,18 @@ class PQuery {
                         throw new Error('You can only use single values for single-column inserts, which is all you can do with a string as a column');
                     }
                     else {
-                        insertSQL += this.createGroupsSQL(values, columns) + ';';
+                        insertSQL += this.createGroupsSQL(columns, values) + ';';
                     }
                 }
                 else {
                     if (message)
                         console.log('Message in this block:', message);
-                    insertSQL += this.createGroupsSQL(values, columns, message) + ';';
+                    insertSQL += this.createGroupsSQL(columns, values, message) + ';';
                 }
             }
             else if (Array.isArray(columns)) {
                 if (columns.length > 0) {
-                    insertSQL += this.createGroupsSQL(values, columns, message) + ';';
+                    insertSQL += this.createGroupsSQL(columns, values, message) + ';';
                 }
                 else {
                     throw new Error('Must specify at least one column');
@@ -275,7 +236,7 @@ class PQuery {
     }
     async listAvailableDbs() {
         let rawDbs = await this.query('SHOW DATABASES;');
-        let dbs = rawDbs.map(row => row.Database);
+        let dbs = rawDbs.map((row) => row.Database);
         return dbs;
     }
     query(query_string) {
@@ -301,12 +262,12 @@ class PQuery {
     ;
     async showCurrentDb() {
         let currentDb = await this.query('SELECT DATABASE()');
-        currentDb = currentDb.map(res => res['DATABASE()'])[0];
+        currentDb = currentDb.map((res) => res['DATABASE()'])[0];
         return currentDb;
     }
     async showCurrentDbTables() {
         let rawTables = await this.query('SHOW TABLES;');
-        let tables = rawTables.map(table => table[`Tables_in_${this.db}`]);
+        let tables = rawTables.map((table) => table[`Tables_in_${this.db}`]);
         return tables;
     }
     async testConnection(endAfterTest, cb) {
@@ -332,6 +293,12 @@ class PQuery {
 }
 new PQuery({ user: 'foo', password: 'bar' });
 module.exports = PQuery;
+function isTheEndOf(i, groupArray) {
+    return i < groupArray.length - 1;
+}
+function isArrayOfArrays(values) {
+    return values.every(value => Array.isArray(value));
+}
 function isSQLFunction(columns) {
     return /\w+\(\)/.test(columns);
 }

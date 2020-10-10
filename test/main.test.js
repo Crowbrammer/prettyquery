@@ -8,7 +8,7 @@ describe('PQuery for MySQL', function () {
     describe('Convenience Methods', function() {
         let pQuery;
         before(async function () {
-            pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD, db: process.env.DATABASE });
+            pQuery = await createPQuery();
         })
 
         after(async function () {
@@ -51,7 +51,7 @@ describe('PQuery for MySQL', function () {
     });
 
     it('Returns a list of Dbs', async function () {
-        const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
+        const pQuery = await createPQuery();
         await pQuery.query('CREATE DATABASE IF NOT EXISTS test_db;');
         let dbs = await pQuery.listAvailableDbs();
         pQuery.connection.end();
@@ -59,7 +59,7 @@ describe('PQuery for MySQL', function () {
     })
     
     it('Creates a DB', async function () {
-        const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
+        const pQuery = await createPQuery();
         await pQuery.query('DROP DATABASE IF EXISTS test_db;');
         expect(await pQuery.listAvailableDbs()).to.not.include('test_db');
         await pQuery.createDb('test_db');
@@ -68,7 +68,7 @@ describe('PQuery for MySQL', function () {
     })
     
     it('Drops a DB', async function () {
-        const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
+        const pQuery = await createPQuery();
         await pQuery.createDb('test_db');
         expect(await pQuery.listAvailableDbs()).to.include('test_db');
         await pQuery.dropDb('test_db');
@@ -77,9 +77,10 @@ describe('PQuery for MySQL', function () {
     })
 
     it('Shows the currently selected db', async function () {
-        const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
-        await pQuery.createDb('test_db');
+        const pQuery = await createPQuery();
+        await pQuery.dropDb('test_db');
         expect(await pQuery.showCurrentDb()).be.null;
+        await pQuery.createDb('test_db');
         await pQuery.useDb('test_db');
         expect(await pQuery.showCurrentDb()).equal('test_db');
         pQuery.connection.end();
@@ -151,23 +152,32 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
     })
 
-    it('Creates a SQL-ready substring from groups', function () {
-        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
-        // If: I intend to insert into a single column 
-        // and: I have two values [['foo'], ['hello']]
-        // and: the values are in array or arrays format
-        // and: pQuery.createGroupsSQL(values)
-        // then: ('foo'), ('hello');
-        expect(pQuery.createGroupsSQL([['foo'], ['hello']], ['col_one'])).to.equal('(\'foo\'), (\'hello\')');
-        
-        // If: I intend to insert into a two columns 
-        // and: I have two values [['foo', 'bar'], ['hello', 'world']]
-        // and: the values are in array or arrays format
-        // and: pQuery.createGroupsSQL(values)
-        // then: ('foo', 'bar'), ('hello', 'world');
-        expect(pQuery.createGroupsSQL([['foo', 'bar'], ['hello', 'world']], ['col_one', 'col_two'])).to.equal('(\'foo\', \'bar\'), (\'hello\', \'world\')');
-        pQuery.connection.end();
+    describe('SQL-ready groups', function () {
+        let pQuery;
+        before(function () {
+            pQuery = new PQuery();
+        })
+
+        after(function () {
+            pQuery.connection.end();
+        })
+
+        describe('SQL-ready group', function () {
+            it('Handles an array of two values', function () {
+                expect(pQuery.createGroupSQL([ 'foo', 'bar' ], true)).to.equal('(\'foo\', \'bar\')');
+            })
+        })
+
+        it('Works with a single column, single value, both represented with arrays', function () {
+            expect(pQuery.createGroupsSQL(['col_one'], [['foo'], ['hello']])).to.equal('(\'foo\'), (\'hello\')');
+        })
+
+        it('Works with two column, two values, both represented with arrays', function () {
+            expect(pQuery.createGroupsSQL(['col_one', 'col_two'], [['foo', 'bar'], ['hello', 'world']])).to.equal('(\'foo\', \'bar\'), (\'hello\', \'world\')');
+        })
     })
+
+    
 
     describe('Can insert Dates', function () {
         let pQuery;
@@ -562,7 +572,7 @@ describe('PQuery for MySQL', function () {
 
 
 async function createPQuery() {
-    const pQuery = new PQuery({ user: process.env.USER_TEST, password: process.env.PASSWORD_TEST });
+    const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
     await pQuery.dropDb('test_db');
     await pQuery.createDb('test_db');
     await pQuery.useDb('test_db');
