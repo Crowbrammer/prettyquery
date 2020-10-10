@@ -20,19 +20,8 @@ class PQuery {
     }
 
     addMemberToGroupSQL(isValues: any, isEnd: boolean, /** String */ groupSQL: string = '(', /** String */ member: string) {
-        if (!isEnd) {
-            // SQL syntax requires values (but not column) to have quotes (')
-            if (isValues) {
-                if (isSQLFunction(member)) { // Don't use ' ' for functions.
-                    groupSQL += `${member}` + ', ';
-                } else {
-                    groupSQL += `${member}` + ', ';
-                }
-                
-            } else {
-                groupSQL += member + ', ';
-            }
-        } else {
+
+        if (isEnd) {
             if (isValues) {
                 if (isSQLFunction(member)) { // Don't use ' ' for functions.
                     groupSQL += `${member}` + ')';
@@ -41,6 +30,18 @@ class PQuery {
                 }
             } else {
                 groupSQL += member + ')';
+            }
+        } else {
+            // SQL syntax requires values (but not column) to have quotes (')
+            if (isValues) {
+                if (isSQLFunction(member)) { // Don't use ' ' for functions.
+                    groupSQL += `${member}` + ', ';
+                } else {
+                    groupSQL += `'${member}'` + ', ';
+                }
+                
+            } else {
+                groupSQL += member + ', ';
             }
         }
         return /** String */ groupSQL;
@@ -78,7 +79,6 @@ class PQuery {
         if (isArrayOfArrays(values as any[])) {
             for (let i = 0; i < values.length; i++) {
                 const value = values[i];
-                console.log(value)
                 let rowSQL = '';
     
                 if(Array.isArray(value)) {
@@ -100,7 +100,6 @@ class PQuery {
                 } else {
                     groupsSQL += rowSQL; // It's the last one so close the sql;
                 }
-                console.log(rowSQL);
             }
         } else {
             if (columns.length > 1) {
@@ -132,7 +131,6 @@ class PQuery {
         if (Array.isArray(groupArray)) {
             for (let i = 0; i < groupArray.length; i++) {
                 const member = groupArray[i];
-                console.log(member);
                 if (isTheEndOf(i, groupArray)) {
                     groupSQL = this.addMemberToGroupSQL(isValues, /** isEnd === */ false, groupSQL, member);
                 } else {
@@ -251,8 +249,6 @@ class PQuery {
                 throw new Error('The column needs to either be a string or an array'); 
             }
         }
-
-        if (message === 'Why') console.log(insertSQL);
 
         await this.query(insertSQL);
     }

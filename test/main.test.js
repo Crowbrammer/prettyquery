@@ -163,6 +163,25 @@ describe('PQuery for MySQL', function () {
         })
 
         describe('SQL-ready group', function () {
+            describe('SQL-ready group member', function () {
+
+                it('Stiches together one columns member', function () {
+                    expect(pQuery.addMemberToGroupSQL(false, true, '(', 'foo')).to.equal('(foo)');
+                })
+                
+                it('Stiches together one values member', function () {
+                    expect(pQuery.addMemberToGroupSQL(true, true, '(', 'foo')).to.equal('(\'foo\')');
+                })
+
+                it('Stiches together two columns member', function () {
+                    expect(pQuery.addMemberToGroupSQL(false, true, '(foo, ', 'bar')).to.equal('(foo, bar)');
+                })
+
+                it('Stiches together two values member', function () {
+                    expect(pQuery.addMemberToGroupSQL(true, true, '(\'foo\', ', 'bar')).to.equal('(\'foo\', \'bar\')');
+                })
+            })
+
             it('Handles an array of two values', function () {
                 expect(pQuery.createGroupSQL([ 'foo', 'bar' ], true)).to.equal('(\'foo\', \'bar\')');
             })
@@ -196,15 +215,13 @@ describe('PQuery for MySQL', function () {
         it('Lets me use the NOW function in for a single column, single insert', async function () {
             await pQuery.insert('test', ['foo'], 'NOW()');
             const date = (await pQuery.query('SELECT * FROM test'))[1].foo;
-            const re   = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/ // The RegEx for the date.
-            expect(re.test(date)).to.be.true;
+            expect(date).to.be.a('date');
         })
 
         it('Lets me use the NOW function in for a double column, single insert', async function () {
             await pQuery.insert('test', ['foo'], 'NOW()');
             const date = (await pQuery.query('SELECT * FROM test'))[1].foo;
-            const re   = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/ // The RegEx for the date.
-            expect(re.test(date)).to.be.true;
+            expect(date).to.be.a('date');
         })
     })
 
@@ -390,7 +407,7 @@ describe('PQuery for MySQL', function () {
         // Specific issue to my code
         columns = ['foo', 'bar'];
         values = ['1','1']
-        await expect(pQuery.insert('test', columns, values, 'Why')).to.not.be.rejected;
+        await expect(pQuery.insert('test', columns, values)).to.not.be.rejected;
 
         // columns type: array,column.length > 1,values type: !array,values members type: array,values.length < columns.length
         // columns type: array,column.length > 1,values type: !array,values members type: array,values.length > columns.length

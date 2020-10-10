@@ -13,20 +13,7 @@ class PQuery {
         this.testConnection();
     }
     addMemberToGroupSQL(isValues, isEnd, groupSQL = '(', member) {
-        if (!isEnd) {
-            if (isValues) {
-                if (isSQLFunction(member)) {
-                    groupSQL += `${member}` + ', ';
-                }
-                else {
-                    groupSQL += `${member}` + ', ';
-                }
-            }
-            else {
-                groupSQL += member + ', ';
-            }
-        }
-        else {
+        if (isEnd) {
             if (isValues) {
                 if (isSQLFunction(member)) {
                     groupSQL += `${member}` + ')';
@@ -37,6 +24,19 @@ class PQuery {
             }
             else {
                 groupSQL += member + ')';
+            }
+        }
+        else {
+            if (isValues) {
+                if (isSQLFunction(member)) {
+                    groupSQL += `${member}` + ', ';
+                }
+                else {
+                    groupSQL += `'${member}'` + ', ';
+                }
+            }
+            else {
+                groupSQL += member + ', ';
             }
         }
         return groupSQL;
@@ -54,7 +54,6 @@ class PQuery {
         if (isArrayOfArrays(values)) {
             for (let i = 0; i < values.length; i++) {
                 const value = values[i];
-                console.log(value);
                 let rowSQL = '';
                 if (Array.isArray(value)) {
                     rowSQL = this.createGroupSQL(value, true);
@@ -78,7 +77,6 @@ class PQuery {
                 else {
                     groupsSQL += rowSQL;
                 }
-                console.log(rowSQL);
             }
         }
         else {
@@ -110,7 +108,6 @@ class PQuery {
         if (Array.isArray(groupArray)) {
             for (let i = 0; i < groupArray.length; i++) {
                 const member = groupArray[i];
-                console.log(member);
                 if (isTheEndOf(i, groupArray)) {
                     groupSQL = this.addMemberToGroupSQL(isValues, false, groupSQL, member);
                 }
@@ -230,8 +227,6 @@ class PQuery {
                 throw new Error('The column needs to either be a string or an array');
             }
         }
-        if (message === 'Why')
-            console.log(insertSQL);
         await this.query(insertSQL);
     }
     async listAvailableDbs() {
