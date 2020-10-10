@@ -218,7 +218,7 @@ class PQuery {
                 }
             } else if (Array.isArray(columns)) {
                 if (columns.length > 0) {
-                    insertSQL += this.createGroupsSQL(columns, values message) + ';';
+                    insertSQL += this.createGroupsSQL(columns, values, message) + ';';
                 } else {
                     throw new Error('Must specify at least one column');
                 }
