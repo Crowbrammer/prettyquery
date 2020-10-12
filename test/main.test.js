@@ -494,29 +494,26 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
     });
 
-    xit('Old: Is robust to different types of inserts', async function () {
-        // Set up
-        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
-        await pQuery.query('DROP DATABASE IF EXISTS test_db;');
-        expect(await pQuery.listAvailableDbs()).to.not.include('test_db');
-        await pQuery.createDb('test_db');
-        await pQuery.useDb('test_db');
-        await pQuery.query('CREATE TABLE people (id INTEGER PRIMARY KEY AUTO_INCREMENT, email VARCHAR(255));')
-        await pQuery.query('CREATE TABLE projects (id INTEGER PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255));')
-        await pQuery.query('CREATE TABLE IF NOT EXISTS person_projects \
-        (person_id INTEGER, project_id INTEGER, datetime_opted_out DATETIME, \
-            PRIMARY KEY (person_id, project_id), \
-            FOREIGN KEY (person_id) REFERENCES people(id),\
-            FOREIGN KEY (project_id) REFERENCES projects(id));');
+    describe('Allows ignore', async function() {
+        let pQuery;
+        before(async function() {
+            pQuery = await createPQuery();
+        });
 
-        // Let the embarassment wash over you. Immerse yourself in it. Keep going. Keep singing. 
-        // Keep singing. 
+        after(async function () {
+            pQuery.connection.end();
+        })
 
-        await pQuery.insert('person_projects', ['person_id', 'project_id'], ['1','1']);
-        expect((await pQuery.query('SELECT * FROM person_projects')).length).to.equal(1);
+        it('Is set up', async function () {
+            await pQuery.query('CREATE TABLE IF NOT EXISTS lol (id INTEGER PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255) UNIQUE);');
+            expect((await pQuery.showCurrentDbTables())).to.include('lol');
+        })
 
-        // Add the person and project
-    })
+        it('Ignores duplicates', async function () {
+            await pQuery.insert('lol', ['name'], ['hi', 'hi', 'hello'], true);
+            expect((await pQuery.select('*', 'lol')).length).to.equal(2);
+        })
+    });
 
     /**
         [X] I don't know how to go about this -> Take a deep breath and try enclosing things

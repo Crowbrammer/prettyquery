@@ -44,8 +44,14 @@ class PQuery {
     async createDb(dbName) {
         await this.query(`CREATE DATABASE IF NOT EXISTS ${dbName};`);
     }
-    createIntroInsertSQL(table, columns) {
-        let insertSQL = `INSERT INTO ${table}`;
+    createIntroInsertSQL(table, columns, ignore) {
+        let insertSQL;
+        if (ignore) {
+            insertSQL = `INSERT IGNORE INTO ${table}`;
+        }
+        else {
+            insertSQL = `INSERT INTO ${table}`;
+        }
         insertSQL += this.createGroupSQL(columns);
         return insertSQL += ' VALUES ';
     }
@@ -127,13 +133,13 @@ class PQuery {
     async dropTable(tableName) {
         await this.query(`DROP TABLE IF EXISTS ${tableName};`);
     }
-    async insert(table, columns, values, message) {
+    async insert(table, columns, values, ignore, message) {
         this.guardInsert(columns, values);
         while (Array.isArray(values) && values.length > 5000) {
-            this.insertIteration(table, columns, values.splice(0, 5000), message);
+            this.insertIteration(table, columns, values.splice(0, 5000), ignore, message);
         }
         if (Array.isArray(values) && values.length > 0 || typeof values === 'string') {
-            this.insertIteration(table, columns, values, message);
+            this.insertIteration(table, columns, values, ignore, message);
         }
         await this.query('SELECT 1+1;');
     }
@@ -167,8 +173,8 @@ class PQuery {
             }
         }
     }
-    async insertIteration(table, columns, values, message) {
-        let insertSQL = this.createIntroInsertSQL(table, columns);
+    async insertIteration(table, columns, values, ignore, message) {
+        let insertSQL = this.createIntroInsertSQL(table, columns, ignore);
         if (message)
             console.log('Message in this block:', message);
         if (Array.isArray(values)) {

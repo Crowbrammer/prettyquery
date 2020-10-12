@@ -51,8 +51,13 @@ class PQuery {
         await this.query(`CREATE DATABASE IF NOT EXISTS ${dbName};`);
     }
 
-    createIntroInsertSQL(table: any, columns: any) {
-        let insertSQL = `INSERT INTO ${table}`
+    createIntroInsertSQL(table: any, columns: any, ignore: boolean) {
+        let insertSQL;
+        if (ignore) {
+            insertSQL = `INSERT IGNORE INTO ${table}`
+        } else {
+            insertSQL = `INSERT INTO ${table}`
+        }
         insertSQL += this.createGroupSQL(columns);
         return insertSQL += ' VALUES ';
     }
@@ -151,16 +156,16 @@ class PQuery {
         await this.query(`DROP TABLE IF EXISTS ${tableName};`);
     }
 
-    async insert(/** String */ table: any, /** String | String[] */ columns: any, /** String | String[] */ values: any[], message: any){
+    async insert(/** String */ table: any, /** String | String[] */ columns: any, /** String | String[] */ values: any[], ignore: boolean, message: any){
         
         this.guardInsert(columns, values);
 
         while (Array.isArray(values) && values.length > 5000) {
-            this.insertIteration(table, columns, values.splice(0, 5000), message);        
+            this.insertIteration(table, columns, values.splice(0, 5000), ignore, message);        
         }
         
         if (Array.isArray(values) && values.length > 0 || typeof values === 'string') {
-            this.insertIteration(table, columns, values, message);        
+            this.insertIteration(table, columns, values, ignore, message);        
         } 
 
         // I had bugs where the next query select didn't pick up on it.
@@ -197,8 +202,8 @@ class PQuery {
         }
     }
 
-    async insertIteration(table: any, columns: string | any[], values: string | any[], message: string) {
-        let insertSQL = this.createIntroInsertSQL(table, columns);
+    async insertIteration(table: any, columns: string | any[], values: string | any[], ignore: boolean, message: string) {
+        let insertSQL = this.createIntroInsertSQL(table, columns, ignore);
         // a single value
         if (message) console.log('Message in this block:', message);
         
