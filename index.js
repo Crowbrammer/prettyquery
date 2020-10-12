@@ -271,7 +271,13 @@ class PQuery {
         let tables = rawTables.map((table) => table[`Tables_in_${this.db}`]);
         return tables;
     }
-    async testConnection(endAfterTest, cb) {
+    async showTableColumns(tableName) {
+        if (this.db && !this.authErrorThrown) {
+            let tables = (await this.query(`DESCRIBE ${tableName};`)).map(row => row.Field);
+            return tables;
+        }
+    }
+    testConnection(endAfterTest, cb) {
         return this.query('SHOW DATABASES;')
             .then(() => {
             if (endAfterTest && !this.connection._protocol._quitSequence)

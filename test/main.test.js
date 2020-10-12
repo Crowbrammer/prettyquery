@@ -32,6 +32,31 @@ describe('PQuery for MySQL', function () {
             expect(fastSelect.length).to.equal(3);
             expect(fastSelect[2].name).to.equal('pow');
         })
+
+        describe('Shows the columns of a table', function () {
+            let sqlString = 'CREATE TABLE convenience_test (id INTEGER PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255))';
+            before(async function () {
+                pQuery = await createPQuery();
+                await pQuery.query(sqlString);
+            })
+
+            after(async function () {
+                // await pQuery.connection.end();
+            });
+
+            it('Has the convenience_test table', async function () {
+                expect(await pQuery.showCurrentDbTables()).to.include('convenience_test');
+            })
+
+            it('Makes sure the string used to create the table has \'id\' and \'name\' in it', function () {
+                expect(sqlString).to.include('id');
+                expect(sqlString).to.include('name');
+            })
+
+            it('Shows the columns', async function () {
+                expect(await pQuery.showTableColumns('convenience_test')).to.include.members(['id', 'name']);
+            })
+        })
     });
 
     it('Shows an error if the creds are wrong', function (done) {
