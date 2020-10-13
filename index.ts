@@ -159,6 +159,7 @@ class PQuery {
     async insert(/** String */ table: any, /** String | String[] */ columns: any, /** String | String[] */ values: any[], ignore: boolean, message: any){
         
         this.guardInsert(columns, values);
+        // Promise.all...
 
         while (Array.isArray(values) && values.length > 5000) {
             this.insertIteration(table, columns, values.splice(0, 5000), ignore, message);        
@@ -255,7 +256,7 @@ class PQuery {
             }
         }
 
-        await this.query(insertSQL);
+        return this.query(insertSQL);
     }
 
     async listAvailableDbs() {

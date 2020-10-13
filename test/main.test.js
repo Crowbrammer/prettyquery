@@ -225,12 +225,17 @@ describe('PQuery for MySQL', function () {
 
     describe('Can insert Dates', function () {
         let pQuery;
-        before(async function () {
+        beforeEach(async function () {
             pQuery = await createPQuery();
+            await pQuery.query('DROP TABLE IF EXISTS test;');
+            await pQuery.query('CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY AUTO_INCREMENT, foo DATETIME, bar DATETIME);');
         });
 
-        it('Is set up', async function () {
-            await pQuery.query('CREATE TABLE test (id INTEGER PRIMARY KEY AUTO_INCREMENT, foo DATETIME, bar DATETIME);');
+        afterEach(function () {
+            pQuery.connection.end();
+        });
+
+        xit('Is set up', async function () {
             // Test single inserts.
             await pQuery.insert('test', ['foo'], 'NOW()');
             let testValues = await pQuery.query('SELECT * FROM test;');
@@ -239,14 +244,44 @@ describe('PQuery for MySQL', function () {
 
         it('Lets me use the NOW function in for a single column, single insert', async function () {
             await pQuery.insert('test', ['foo'], 'NOW()');
-            const date = (await pQuery.query('SELECT * FROM test'))[1].foo;
+            const date = (await pQuery.query('SELECT * FROM test'))[0].foo;
+            console.log(date);
             expect(date).to.be.a('date');
         })
 
         it('Lets me use the NOW function in for a double column, single insert', async function () {
             await pQuery.insert('test', ['foo'], 'NOW()');
-            const date = (await pQuery.query('SELECT * FROM test'))[1].foo;
+            const date = (await pQuery.query('SELECT * FROM test'))[0].foo;
             expect(date).to.be.a('date');
+        })
+    })
+
+    describe('Returns info', function () {
+        let pQuery;
+        beforeEach(async function () {
+            pQuery = await createPQuery();
+            await pQuery.query('DROP TABLE IF EXISTS test;');
+            await pQuery.query('CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY AUTO_INCREMENT, foo VARCHAR(255));');
+        });
+
+        afterEach(function () {
+            pQuery.connection.end();
+        });
+
+        xit('Is set up', async function () {
+            // Test single inserts.
+            await pQuery.insert('test', ['foo'], 'Hello');
+            let testValues = await pQuery.query('SELECT * FROM test;');
+            expect(testValues.length).to.equal(1);
+        })
+
+        it('With query, it shows the last insert id', async function () {
+            let lastInsert = await pQuery.query('INSERT INTO test (foo) VALUES (\'bar\'), (\'wow\'), (\'la\')');
+            console.log(lastInsert);
+            expect(lastInsert.insertId).to.be.equal(1);
+            lastInsert = await pQuery.query('INSERT INTO test (foo) VALUES (\'bar\'), (\'wow\'), (\'la\')');
+            console.log(lastInsert);
+            expect(lastInsert.insertId).to.be.equal(4);
         })
     })
 

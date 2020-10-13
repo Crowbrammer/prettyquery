@@ -233,7 +233,7 @@ class PQuery {
                 throw new Error('The column needs to either be a string or an array');
             }
         }
-        await this.query(insertSQL);
+        return this.query(insertSQL);
     }
     async listAvailableDbs() {
         let rawDbs = await this.query('SHOW DATABASES;');
