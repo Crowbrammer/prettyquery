@@ -256,6 +256,7 @@ describe('PQuery for MySQL', function () {
         })
     })
 
+
     describe('Returns info', function () {
         let pQuery;
         beforeEach(async function () {
