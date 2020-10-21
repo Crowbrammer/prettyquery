@@ -27,7 +27,7 @@ class PQuery {
                 if (isSQLFunction(member)) { // Don't use ' ' for functions.
                     groupSQL += `${member}` + ')';
                 } else {
-                    groupSQL += `'${esc(member)}'` + ')';
+                    groupSQL += `'${esc(String(member))}'` + ')';
                 }
             } else {
                 groupSQL += member + ')';
@@ -38,7 +38,7 @@ class PQuery {
                 if (isSQLFunction(member)) { // Don't use ' ' for functions.
                     groupSQL += `${member}` + ', ';
                 } else {
-                    groupSQL += `'${esc(member)}'` + ', ';
+                    groupSQL += `'${esc(String(member))}'` + ', ';
                 }
                 
             } else {
@@ -95,7 +95,7 @@ class PQuery {
                         if (isSQLFunction(values as string)) { // Don't use ' ' for functions.
                             rowSQL += `(${value})`;
                         } else {
-                            rowSQL += `('${esc(value)}')`;
+                            rowSQL += `('${esc(String(value))}')`;
                        }
                     } else {
                         throw new Error('You shouldn\'t be able to get here...')
@@ -121,9 +121,9 @@ class PQuery {
                 if (columns.length === values.length) {
                     // This might be a bit silly.
                     if (Array.isArray(values)) {
-                        groupsSQL += `('${esc(values[0])}')`;
+                        groupsSQL += `('${esc(String(values[0]))}')`;
                     } else {
-                        groupsSQL += `('${esc(values)}')`;
+                        groupsSQL += `('${esc(String(values))}')`;
                     }
                 } else {
                     (values as any[]).forEach(value => groupsSQL += this.createGroupSQL(value, /** isValues === */ true) + ',');

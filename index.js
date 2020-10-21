@@ -20,7 +20,7 @@ class PQuery {
                     groupSQL += `${member}` + ')';
                 }
                 else {
-                    groupSQL += `'${esc(member)}'` + ')';
+                    groupSQL += `'${esc(String(member))}'` + ')';
                 }
             }
             else {
@@ -33,7 +33,7 @@ class PQuery {
                     groupSQL += `${member}` + ', ';
                 }
                 else {
-                    groupSQL += `'${esc(member)}'` + ', ';
+                    groupSQL += `'${esc(String(member))}'` + ', ';
                 }
             }
             else {
@@ -71,7 +71,7 @@ class PQuery {
                             rowSQL += `(${value})`;
                         }
                         else {
-                            rowSQL += `('${esc(value)}')`;
+                            rowSQL += `('${esc(String(value))}')`;
                         }
                     }
                     else {
@@ -98,10 +98,10 @@ class PQuery {
             else if (columns.length === 1) {
                 if (columns.length === values.length) {
                     if (Array.isArray(values)) {
-                        groupsSQL += `('${esc(values[0])}')`;
+                        groupsSQL += `('${esc(String(values[0]))}')`;
                     }
                     else {
-                        groupsSQL += `('${esc(values)}')`;
+                        groupsSQL += `('${esc(String(values))}')`;
                     }
                 }
                 else {
