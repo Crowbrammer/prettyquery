@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('chai').use(require('chai-as-promised'));
 const expect = require('chai').expect;
 const PQuery = require('../index');
 const sinon  = require('sinon');
@@ -221,8 +222,6 @@ describe('PQuery for MySQL', function () {
         })
     })
 
-    
-
     describe('Can insert Dates', function () {
         let pQuery;
         beforeEach(async function () {
@@ -342,6 +341,29 @@ describe('PQuery for MySQL', function () {
 
     it('Should check that the table exists before inserting');
     it('Should check that the columns are in the table before inserting');
+    describe('Inserting with quotes', function () {
+        let pQuery;
+        before(async function () {
+            pQuery = await createPQuery();
+            await pQuery.query('CREATE TABLE fhqwhagads (id INTEGER PRIMARY KEY AUTO_INCREMENT, name VARCHAR(1000))');
+        });
+    
+        after(async function () {
+            await pQuery.query('DROP TABLE fhqwhagads');
+            pQuery.connection.end();
+        });
+    
+        it('Is set up', async function () {
+            expect(await pQuery.showCurrentDbTables()).to.include('fhqwhagads');
+        })
+    
+        it('Doesn\'t error when inserting quoted strings', async function () {
+            const myOldErroredScript = `Schedule templates require tasks. Tasks need input from the user. The user needs to put the name and task. There should probably be validation. I'd like to say "add task -n blah -t 20" and it adds it to the current set of tasks. I'd rather stay out of a loop and have myself be free.`;
+            const insert = await pQuery.insert('fhqwhagads', ['name'], [myOldErroredScript]).catch(err => err);
+            expect(insert).to.not.be.an('error');
+        })
+    
+    })
 
     it('Robust to different inserts', async function() {
         // Set up
@@ -588,11 +610,7 @@ describe('PQuery for MySQL', function () {
         // then: the query should be called once
         
         // Set up
-        const pQuery = new PQuery({user: process.env.DB_USER, password: process.env.DB_PASSWORD})
-        await pQuery.query('DROP DATABASE IF EXISTS test_db;');
-        expect(await pQuery.listAvailableDbs()).to.not.include('test_db');
-        await pQuery.createDb('test_db');
-        await pQuery.useDb('test_db');
+        const pQuery = await createPQuery();
         await pQuery.query('CREATE TABLE test (id INTEGER PRIMARY KEY AUTO_INCREMENT, foo VARCHAR(20), bar VARCHAR(20));')
         
         pQuery.query = sinon.fake();
@@ -601,7 +619,7 @@ describe('PQuery for MySQL', function () {
             arr.push(`value-${i}`);
         }
         await pQuery.insert('test', ['foo'], arr);
-        expect(pQuery.query.callCount).to.equal(2);
+        expect(pQuery.query.callCount).to.equal(1);
         
         // Reset the fake
         pQuery.query = sinon.fake();
@@ -610,7 +628,7 @@ describe('PQuery for MySQL', function () {
             arr.push(`value-${i}`);
         }
         await pQuery.insert('test', ['foo'], arr);
-        expect(pQuery.query.callCount).to.equal(3);
+        expect(pQuery.query.callCount).to.equal(2);
         pQuery.connection.end();
         
 
@@ -642,6 +660,7 @@ describe('PQuery for MySQL', function () {
         pQuery.connection.end();
 
     }).timeout(10000)
+
 
 })
 

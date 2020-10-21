@@ -1,4 +1,5 @@
 const mysql = require('mysql');
+const esc = require('sql-escape');
 class PQuery {
     constructor(options = {}) {
         this.user = options.user || process.env.USER;
@@ -19,7 +20,7 @@ class PQuery {
                     groupSQL += `${member}` + ')';
                 }
                 else {
-                    groupSQL += `'${member}'` + ')';
+                    groupSQL += `'${esc(member)}'` + ')';
                 }
             }
             else {
@@ -32,7 +33,7 @@ class PQuery {
                     groupSQL += `${member}` + ', ';
                 }
                 else {
-                    groupSQL += `'${member}'` + ', ';
+                    groupSQL += `'${esc(member)}'` + ', ';
                 }
             }
             else {
@@ -70,7 +71,7 @@ class PQuery {
                             rowSQL += `(${value})`;
                         }
                         else {
-                            rowSQL += `('${value}')`;
+                            rowSQL += `('${esc(value)}')`;
                         }
                     }
                     else {
@@ -96,7 +97,12 @@ class PQuery {
             }
             else if (columns.length === 1) {
                 if (columns.length === values.length) {
-                    groupsSQL += `('${values}')`;
+                    if (Array.isArray(values)) {
+                        groupsSQL += `('${esc(values[0])}')`;
+                    }
+                    else {
+                        groupsSQL += `('${esc(values)}')`;
+                    }
                 }
                 else {
                     values.forEach(value => groupsSQL += this.createGroupSQL(value, true) + ',');
@@ -135,13 +141,14 @@ class PQuery {
     }
     async insert(table, columns, values, ignore, message) {
         this.guardInsert(columns, values);
+        const promises = [];
         while (Array.isArray(values) && values.length > 5000) {
-            this.insertIteration(table, columns, values.splice(0, 5000), ignore, message);
+            promises.push(this.insertIteration(table, columns, values.splice(0, 5000), ignore, message));
         }
         if (Array.isArray(values) && values.length > 0 || typeof values === 'string') {
-            this.insertIteration(table, columns, values, ignore, message);
+            promises.push(this.insertIteration(table, columns, values, ignore, message));
         }
-        await this.query('SELECT 1+1;');
+        await Promise.all(promises);
     }
     guardInsert(columns, values) {
         const hasColumns = (columns && (Array.isArray(columns) && columns.length > 0));

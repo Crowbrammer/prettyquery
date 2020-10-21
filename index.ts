@@ -1,4 +1,5 @@
 const mysql = require('mysql');
+const esc = require('sql-escape');
 
 class PQuery {
     user: string;
@@ -26,7 +27,7 @@ class PQuery {
                 if (isSQLFunction(member)) { // Don't use ' ' for functions.
                     groupSQL += `${member}` + ')';
                 } else {
-                    groupSQL += `'${member}'` + ')';
+                    groupSQL += `'${esc(member)}'` + ')';
                 }
             } else {
                 groupSQL += member + ')';
@@ -37,7 +38,7 @@ class PQuery {
                 if (isSQLFunction(member)) { // Don't use ' ' for functions.
                     groupSQL += `${member}` + ', ';
                 } else {
-                    groupSQL += `'${member}'` + ', ';
+                    groupSQL += `'${esc(member)}'` + ', ';
                 }
                 
             } else {
@@ -81,6 +82,7 @@ class PQuery {
 
         let groupsSQL = '';
 
+        // Array<Array<string | number | boolean>>
         if (isArrayOfArrays(values as any[])) {
             for (let i = 0; i < values.length; i++) {
                 const value = values[i];
@@ -93,7 +95,7 @@ class PQuery {
                         if (isSQLFunction(values as string)) { // Don't use ' ' for functions.
                             rowSQL += `(${value})`;
                         } else {
-                            rowSQL += `('${value}')`;
+                            rowSQL += `('${esc(value)}')`;
                        }
                     } else {
                         throw new Error('You shouldn\'t be able to get here...')
@@ -106,6 +108,7 @@ class PQuery {
                     groupsSQL += rowSQL; // It's the last one so close the sql;
                 }
             }
+        // Array<string | number | boolean>
         } else {
             if (columns.length > 1) {
                 if (columns.length === values.length) {
@@ -116,7 +119,12 @@ class PQuery {
                 }
             } else if (columns.length === 1) {
                 if (columns.length === values.length) {
-                    groupsSQL += `('${values}')`;
+                    // This might be a bit silly.
+                    if (Array.isArray(values)) {
+                        groupsSQL += `('${esc(values[0])}')`;
+                    } else {
+                        groupsSQL += `('${esc(values)}')`;
+                    }
                 } else {
                     (values as any[]).forEach(value => groupsSQL += this.createGroupSQL(value, /** isValues === */ true) + ',');
                     // get rid of the last ,
@@ -160,19 +168,20 @@ class PQuery {
         
         this.guardInsert(columns, values);
         // Promise.all...
+        const promises = [];
 
         while (Array.isArray(values) && values.length > 5000) {
-            this.insertIteration(table, columns, values.splice(0, 5000), ignore, message);        
+            promises.push(this.insertIteration(table, columns, values.splice(0, 5000), ignore, message));        
         }
         
         if (Array.isArray(values) && values.length > 0 || typeof values === 'string') {
-            this.insertIteration(table, columns, values, ignore, message);        
+            promises.push(this.insertIteration(table, columns, values, ignore, message));        
         } 
 
         // I had bugs where the next query select didn't pick up on it.
         // for some reason a select query gives it time to populate the 
         // db. Idk why this fixes it.
-        await this.query('SELECT 1+1;');
+        await Promise.all(promises);
 
     }
 
