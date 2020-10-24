@@ -5,16 +5,19 @@ class PQuery {
     user: string;
     password: string;
     db: string | void;
+    host: string
     connection: any;
     authErrorThrown: boolean;
-    constructor(options: { user?: any; password?: any; db?: any; } = {}) {
+    constructor(options: { user?: string; password?: string; db?: string; host?: string} = {}) {
         this.user       = options.user     || process.env.USER;
         this.password   = options.password || process.env.PASSWORD;
         this.db         = options.db     
+        this.host       = options.host
         this.connection = mysql.createConnection({
             user:     this.user,
             password: this.password,
-            database: this.db
+            database: this.db,
+            host:     this.host
         })
         this.authErrorThrown = false;
         this.testConnection();
