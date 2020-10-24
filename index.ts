@@ -333,7 +333,8 @@ class PQuery {
 
     async useDb(dbName: string) {
         this.db = dbName; 
-        this.query(`USE ${dbName};`);
+        await this.query(`CREATE DATABASE IF NOT EXISTS ${this.db}`);
+        await this.query(`USE ${dbName};`);
     }
 
     

@@ -304,7 +304,8 @@ class PQuery {
     ;
     async useDb(dbName) {
         this.db = dbName;
-        this.query(`USE ${dbName};`);
+        await this.query(`CREATE DATABASE IF NOT EXISTS ${this.db}`);
+        await this.query(`USE ${dbName};`);
     }
 }
 module.exports = PQuery;
