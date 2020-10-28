@@ -259,7 +259,7 @@ class PQuery {
         });
     }
     async select(selector, table, whereColumn, whereValue) {
-        if (whereColumn && (typeof whereValue === 'boolean')) {
+        if (whereColumn) {
             switch (typeof whereValue) {
                 case 'boolean':
                     return this.query(`SELECT ${selector} FROM ${table} WHERE ${whereColumn} = ${whereValue}`);

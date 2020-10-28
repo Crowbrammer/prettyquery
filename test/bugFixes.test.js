@@ -35,4 +35,14 @@ describe('Bug Fixes', function () {
         // Set something I make as the current
     });
 
+    it('Actually uses where clauses', async function () {
+        await pQuery.query('INSERT INTO test (name, is_current) VALUES (\'Lol\', true);');
+        await pQuery.query('INSERT INTO test (name, is_current) VALUES (\'Lol\', true);');
+        await pQuery.query('INSERT INTO test (name, is_current) VALUES (\'Lol\', true);');
+        await pQuery.query('INSERT INTO test (name, is_current) VALUES (\'Lol\', true);');
+        const id = (await pQuery.query('INSERT INTO test (name, is_current) VALUES (\'Lol\', true);')).insertId;
+        expect((await pQuery.select('id', 'test','id', id)).length).to.equal(1);
+        await pQuery.query('DELETE FROM test');
+    })
+
 })
