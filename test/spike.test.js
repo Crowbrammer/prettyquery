@@ -17,7 +17,7 @@ function test(options, cb) {
 }
 const testPromisify = util.promisify(test);
 
-describe('Logical Operators', function () {
+xdescribe('Logical Operators', function () {
     it('false && true returns false', function () {
         expect(false && true).to.be.false;
     })
@@ -46,14 +46,14 @@ describe('Logical Operators', function () {
     })
 })
 
-describe('Operators', function () {
+xdescribe('Operators', function () {
     it('Returns the full value with +=', function () {
         let a = 'Hello';
         expect(a += ', world!').to.equal('Hello, world!');
     })
 })
 
-describe('Mocking', function () {
+xdescribe('Mocking', function () {
     it('Updates the call count', function () {
         // If: I have a sinon fake
         // and: I call it once
@@ -75,7 +75,7 @@ describe('Mocking', function () {
     })
 })
 
-describe('Learning MySQL', function () {
+xdescribe('Learning MySQL', function () {
     it('Shows the currently selected db', async function () {
         const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
         await pQuery.createDb('test_db');
@@ -105,7 +105,7 @@ describe('Learning MySQL', function () {
     })
 })
 
-describe('Node.js', function () {
+xdescribe('Node.js', function () {
     it('Allows multiple assignment... once', function () {
         let {a,b} = {a: 1, b: 2};
         expect(a).to.equal(1);
@@ -132,7 +132,7 @@ describe('Node.js', function () {
     })
 })
 
-describe('Understand asynchronicity', function () {
+xdescribe('Understand asynchronicity', function () {
     it('Shows the error', function (done) {
         const pQuery = new PQuery({user: 'foo', password: 'bar'});
         let intervals = 0;
@@ -192,7 +192,7 @@ xdescribe('Database reliability', function () {
     })
 })
 
-describe('Chaining', function () {
+xdescribe('Chaining', function () {
     it('Promisify works', function () {
         return expect(testPromisify({str: 'Hello'})).to.eventually.equal('Hello');
     })

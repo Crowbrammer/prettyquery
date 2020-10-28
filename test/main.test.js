@@ -666,7 +666,7 @@ describe('PQuery for MySQL', function () {
 
 
 async function createPQuery() {
-    const pQuery = new PQuery({ user: process.env.USER, password: process.env.PASSWORD });
+    const pQuery = new PQuery({ user: process.env.DB_USER, password: process.env.DB_PASSWORD });
     await pQuery.dropDb('test_db');
     await pQuery.createDb('test_db');
     await pQuery.useDb('test_db');
